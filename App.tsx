@@ -19,7 +19,6 @@ const App: React.FC = () => {
   });
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [showWelcome, setShowWelcome] = useState(true);
   const [isBackgroundSettingsOpen, setIsBackgroundSettingsOpen] = useState(false);
 
   const [widgets, setWidgets] = useState<WidgetInstance[]>(() => {
@@ -32,29 +31,17 @@ const App: React.FC = () => {
     return saved ? JSON.parse(saved) : [];
   });
 
-  const [maxZIndex, setMaxZIndex] = useState(10);
+  const [maxZIndex, setMaxZIndex] = useState(100);
 
   useEffect(() => {
     localStorage.setItem('kp_widgets', JSON.stringify(widgets));
     localStorage.setItem('kp_background', background);
-  }, [widgets, background]);
-
-  useEffect(() => {
-    if (widgets.some(w => w.isOpen)) {
-      setShowWelcome(false);
-    }
-  }, []);
+    localStorage.setItem('kp_students', JSON.stringify(students));
+  }, [widgets, background, students]);
 
   const handleSelectBackground = (bg: string) => {
     setBackground(bg);
-    setShowWelcome(false);
     setIsBackgroundSettingsOpen(false);
-    setIsSidebarOpen(true);
-  };
-
-  const handleCloseWelcome = () => {
-    setShowWelcome(false);
-    setIsSidebarOpen(false);
   };
 
   const handleSelectTool = (type: ToolType) => {
@@ -62,39 +49,84 @@ const App: React.FC = () => {
       clearAll();
     } else if (type === ToolType.BACKGROUND) {
       setIsBackgroundSettingsOpen(true);
-      setShowWelcome(false);
+      setIsSidebarOpen(false);
     } else if (type === ToolType.MATTEYTAN) {
       window.open('https://matteytan.se/', '_blank');
+      setIsSidebarOpen(false);
     } else {
       toggleWidget(type);
+      setIsSidebarOpen(false);
     }
   };
 
   const toggleWidget = (type: ToolType) => {
     const existing = widgets.find(w => w.type === type);
+    const newZ = maxZIndex + 1;
+    setMaxZIndex(newZ);
+
     if (existing) {
-      setWidgets(prev => prev.map(w => w.type === type ? { ...w, isOpen: !w.isOpen, zIndex: w.isOpen ? w.zIndex : maxZIndex + 1 } : w));
-      if (!existing.isOpen) setMaxZIndex(prev => prev + 1);
+      setWidgets(prev => prev.map(w => 
+        w.type === type ? { ...w, isOpen: !w.isOpen, zIndex: newZ } : w
+      ));
     } else {
-      const newZ = maxZIndex + 1;
+      const openCount = widgets.filter(w => w.isOpen).length;
+      const offset = (openCount % 5) * 60;
+      
       const newWidget: WidgetInstance = {
         id: Math.random().toString(36).substr(2, 9),
         type,
-        x: 100 + (widgets.length * 40),
-        y: 100 + (widgets.length * 20),
+        x: 80 + offset,
+        y: 80 + offset,
         zIndex: newZ,
         isOpen: true,
-        width: type === ToolType.INSTRUCTIONS || type === ToolType.POLLING ? 800 : 500
+        width: type === ToolType.INSTRUCTIONS || type === ToolType.POLLING ? 700 : 450,
+        height: 400
       };
       setWidgets([...widgets, newWidget]);
-      setMaxZIndex(newZ);
     }
-    setShowWelcome(false);
-    setIsBackgroundSettingsOpen(false);
+  };
+
+  const autoArrangeWidgets = () => {
+    const openWidgets = widgets.filter(w => w.isOpen);
+    if (openWidgets.length === 0) return;
+
+    const margin = 24;
+    const sidebarWidth = isSidebarOpen ? (window.innerWidth < 768 ? 80 : 288) : 0;
+    const availableWidth = window.innerWidth - sidebarWidth - (margin * 2);
+    
+    let currentX = margin;
+    let currentY = 80; 
+    let rowMaxHeight = 0;
+
+    const newWidgets = widgets.map(w => {
+      if (!w.isOpen) return w;
+
+      const wWidth = w.width || 450;
+      const wHeight = w.height || 400;
+
+      if (currentX + wWidth > availableWidth && currentX > margin) {
+        currentX = margin;
+        currentY += rowMaxHeight + margin;
+        rowMaxHeight = 0;
+      }
+
+      const updated = { ...w, x: currentX, y: currentY };
+      
+      currentX += wWidth + margin;
+      rowMaxHeight = Math.max(rowMaxHeight, wHeight);
+
+      return updated;
+    });
+
+    setWidgets(newWidgets);
   };
 
   const moveWidget = useCallback((type: ToolType, x: number, y: number) => {
     setWidgets(prev => prev.map(w => w.type === type ? { ...w, x, y } : w));
+  }, []);
+
+  const resizeWidget = useCallback((type: ToolType, width: number, height: number) => {
+    setWidgets(prev => prev.map(w => w.type === type ? { ...w, width, height } : w));
   }, []);
 
   const focusWidget = (type: ToolType) => {
@@ -108,10 +140,8 @@ const App: React.FC = () => {
   };
 
   const clearAll = () => {
-    setWidgets([]);
-    setShowWelcome(true);
+    setWidgets(prev => prev.map(w => ({ ...w, isOpen: false })));
     setIsBackgroundSettingsOpen(false);
-    setIsSidebarOpen(true);
   };
 
   const getWidgetConfig = (type: ToolType) => {
@@ -141,16 +171,16 @@ const App: React.FC = () => {
     return background;
   }, [background]);
 
+  const activeWidgets = useMemo(() => widgets.filter(w => w.isOpen), [widgets]);
+
   return (
     <div 
-      className={`flex h-screen overflow-hidden transition-all duration-700 ${backgroundClass}`}
+      className={`flex h-screen w-screen overflow-hidden transition-all duration-700 ${backgroundClass}`}
       style={backgroundStyle}
     >
-      {(background.includes('url') || background.startsWith('http') || background.startsWith('data:image')) && (
-        <div className="absolute inset-0 bg-slate-900/10 pointer-events-none" />
-      )}
-      
-      <div className={`transition-all duration-300 ease-in-out ${isSidebarOpen ? 'w-20 md:w-80' : 'w-0 overflow-hidden'}`}>
+      <div 
+        className={`transition-all duration-300 ease-in-out shrink-0 relative z-[9999] ${isSidebarOpen ? 'w-20 md:w-72' : 'w-0 opacity-0 overflow-hidden'}`}
+      >
         <Sidebar 
           activeTool={null} 
           onSelectTool={handleSelectTool} 
@@ -158,9 +188,9 @@ const App: React.FC = () => {
         />
       </div>
 
-      <main className="flex-1 relative overflow-hidden">
-        <div className="absolute inset-0 p-8">
-          {widgets.filter(w => w.isOpen).map((w) => {
+      <main className="flex-1 relative overflow-hidden h-full">
+        <div className="absolute inset-0">
+          {activeWidgets.map((w) => {
             const config = getWidgetConfig(w.type);
             if (!config) return null;
             return (
@@ -172,7 +202,9 @@ const App: React.FC = () => {
                 y={w.y}
                 zIndex={w.zIndex}
                 initialWidth={w.width}
+                initialHeight={w.height}
                 onMove={(x, y) => moveWidget(w.type, x, y)}
+                onResize={(width, height) => resizeWidget(w.type, width, height)}
                 onFocus={() => focusWidget(w.type)}
                 onClose={() => closeWidget(w.type)}
               >
@@ -180,55 +212,45 @@ const App: React.FC = () => {
               </WidgetFrame>
             );
           })}
+        </div>
 
-          {showWelcome && (
-            <div className="h-full flex flex-col items-center justify-center text-center space-y-8 animate-in fade-in zoom-in-95 duration-1000">
-               <div className="bg-white/80 backdrop-blur-xl p-12 rounded-[4rem] shadow-2xl border border-white/40 max-w-2xl relative">
-                 <button 
-                   onClick={handleCloseWelcome}
-                   className="absolute top-8 right-8 text-slate-400 hover:text-slate-600 p-2 text-xl hover:scale-110 transition-transform"
-                   title="Minimera"
-                 >
-                   ✕
-                 </button>
-                 <h2 className="text-5xl font-black text-slate-800 mb-4 leading-tight">Välkommen till din <span className="text-indigo-600">arbetsyta!</span></h2>
-                 <p className="text-xl text-slate-600 mb-10">Ditt digitala klassrum står redo. Utforska menyn till vänster och klicka på ett verktyg för att börja skräddarsy din lektionstavla.</p>
-                 
-                 <div className="space-y-6">
-                   <p className="text-sm font-bold uppercase tracking-widest text-slate-400">Snabbval: Bakgrund</p>
-                   <BackgroundSelector current={background} onSelect={handleSelectBackground} />
-                 </div>
-               </div>
-               <p className="text-slate-500 font-medium">✨ Allt sparas automatiskt i din webbläsare.</p>
+        {isBackgroundSettingsOpen && (
+          <div className="absolute inset-0 z-[10000] flex items-center justify-center bg-slate-900/40 backdrop-blur-md animate-in fade-in duration-300">
+            <div className="bg-white p-10 rounded-[3.5rem] shadow-2xl max-w-xl w-full border border-slate-100 relative mx-4">
+              <button 
+                onClick={() => setIsBackgroundSettingsOpen(false)}
+                className="absolute top-8 right-8 text-slate-400 hover:text-slate-600 p-2 hover:bg-slate-50 rounded-full transition-colors"
+              >
+                ✕
+              </button>
+              <h3 className="text-3xl font-black text-slate-800 mb-8 flex items-center gap-4">
+                <span className="text-4xl">🖼️</span> Bakgrund
+              </h3>
+              <BackgroundSelector current={background} onSelect={handleSelectBackground} />
             </div>
-          )}
+          </div>
+        )}
 
-          {isBackgroundSettingsOpen && (
-            <div className="absolute inset-0 z-[50] flex items-center justify-center bg-slate-900/20 backdrop-blur-sm animate-in fade-in duration-300">
-              <div className="bg-white p-10 rounded-[3rem] shadow-2xl max-w-xl w-full border border-slate-100 relative">
-                <button 
-                  onClick={() => setIsBackgroundSettingsOpen(false)}
-                  className="absolute top-6 right-6 text-slate-400 hover:text-slate-600 p-2"
-                >
-                  ✕
-                </button>
-                <h3 className="text-3xl font-black text-slate-800 mb-6 flex items-center gap-3">
-                  <span className="text-4xl">🖼️</span> Ändra bakgrund
-                </h3>
-                <BackgroundSelector current={background} onSelect={handleSelectBackground} />
-                <p className="mt-8 text-slate-400 text-sm italic">Välj en bild, färg eller ladda upp en egen för att anpassa din yta.</p>
-              </div>
-            </div>
+        <div className="absolute top-6 left-6 flex gap-4 z-[999]">
+          {!isSidebarOpen && (
+            <button 
+              onClick={() => setIsSidebarOpen(true)}
+              className="w-14 h-14 bg-white/90 backdrop-blur-md text-indigo-600 rounded-2xl shadow-xl flex items-center justify-center text-2xl hover:scale-110 transition-all border border-white/50"
+              title="Öppna meny"
+            >
+              🏫
+            </button>
           )}
         </div>
 
-        {!isSidebarOpen && (
+        {activeWidgets.length > 0 && (
           <button 
-            onClick={() => setIsSidebarOpen(true)}
-            className="absolute top-6 right-6 w-16 h-16 bg-indigo-600 text-white rounded-full shadow-2xl flex items-center justify-center text-3xl hover:bg-indigo-700 hover:scale-110 transition-all z-[9999] border-4 border-white animate-in slide-in-from-right-10"
-            title="Öppna meny"
+            onClick={autoArrangeWidgets}
+            className="absolute top-6 right-6 px-6 h-14 bg-white/90 backdrop-blur-md text-indigo-600 rounded-2xl shadow-xl flex items-center justify-center gap-3 font-bold hover:scale-105 transition-all z-[999] border border-white/50 animate-in fade-in slide-in-from-right-4"
+            title="Sortera fönster"
           >
-            🏫
+            <span className="text-xl">🪄</span>
+            <span className="hidden md:block">Organisera</span>
           </button>
         )}
       </main>
