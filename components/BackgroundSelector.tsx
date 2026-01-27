@@ -7,6 +7,7 @@ const PRESETS = [
   { id: 'classroom', value: 'bg-[url("https://images.unsplash.com/photo-1509062522246-3755977927d7?auto=format&fit=crop&q=80&w=2560")] bg-cover', label: 'Klassrum' },
   { id: 'forest', value: 'bg-[url("https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&q=80&w=2560")] bg-cover', label: 'Lugn Skog' },
   { id: 'mountain', value: 'bg-[url("https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&q=80&w=2560")] bg-cover', label: 'Bergstopp' },
+  { id: 'library', value: 'bg-[url("https://images.unsplash.com/photo-1521587760476-6c12a4b040da?auto=format&fit=crop&q=80&w=2560")] bg-cover', label: 'Bibliotek' },
 ];
 
 interface BackgroundSelectorProps {
@@ -39,16 +40,12 @@ const BackgroundSelector: React.FC<BackgroundSelectorProps> = ({ current, onSele
     }
   };
 
-  // Separera den första preset-bilden från resten för att kunna placera knappar emellan
-  const firstPreset = PRESETS[0];
-  const remainingPresets = PRESETS.slice(1);
-
   const renderPreset = (bg: typeof PRESETS[0]) => (
     <button
       key={bg.id}
       onClick={() => onSelect(bg.value)}
-      className={`shrink-0 w-20 h-14 rounded-xl border-2 transition-all overflow-hidden relative group ${
-        current === bg.value ? 'border-indigo-600 scale-105 shadow-md' : 'border-transparent hover:border-slate-300'
+      className={`w-full h-16 rounded-xl border-2 transition-all overflow-hidden relative group ${
+        current === bg.value ? 'border-indigo-600 scale-105 shadow-md z-10' : 'border-slate-100 hover:border-slate-300'
       }`}
     >
       <div className={`w-full h-full ${bg.value.includes('url') ? bg.value : bg.value} transition-transform group-hover:scale-110`} />
@@ -60,13 +57,11 @@ const BackgroundSelector: React.FC<BackgroundSelectorProps> = ({ current, onSele
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide max-w-[80vw]">
+      {/* Grid container for 2 rows of 4 (8 items total) */}
+      <div className="grid grid-cols-4 gap-3">
         
-        {/* 1. Första förvalet */}
-        {renderPreset(firstPreset)}
-
-        {/* 2. Färgval (Nu på plats 2) */}
-        <div className="shrink-0 w-20 h-14 rounded-xl border-2 border-slate-100 bg-white flex items-center justify-center relative group overflow-hidden">
+        {/* Color Picker Button (Item 1) */}
+        <div className="w-full h-16 rounded-xl border-2 border-slate-100 bg-white flex items-center justify-center relative group overflow-hidden transition-all hover:border-slate-300">
           <input 
             type="color" 
             value={current.startsWith('#') ? current : '#ffffff'}
@@ -79,10 +74,10 @@ const BackgroundSelector: React.FC<BackgroundSelectorProps> = ({ current, onSele
           </div>
         </div>
 
-        {/* 3. Anpassad/Egen (Nu på plats 3) */}
+        {/* Custom Settings Button (Item 2) */}
         <button
           onClick={() => setShowCustom(!showCustom)}
-          className={`shrink-0 w-20 h-14 rounded-xl border-2 border-slate-100 bg-white flex items-center justify-center relative transition-all ${showCustom ? 'bg-indigo-50 border-indigo-200' : 'hover:border-slate-300'}`}
+          className={`w-full h-16 rounded-xl border-2 border-slate-100 bg-white flex items-center justify-center relative transition-all ${showCustom ? 'bg-indigo-50 border-indigo-200' : 'hover:border-slate-300'}`}
         >
           <span className="text-xl">⚙️</span>
           <div className="absolute inset-x-0 bottom-1 flex justify-center opacity-60">
@@ -90,33 +85,33 @@ const BackgroundSelector: React.FC<BackgroundSelectorProps> = ({ current, onSele
           </div>
         </button>
 
-        {/* 4. Resten av förvalsbilderna */}
-        {remainingPresets.map(renderPreset)}
+        {/* Preset Backgrounds (Items 3-8) */}
+        {PRESETS.map(renderPreset)}
       </div>
 
       {showCustom && (
-        <div className="flex flex-wrap gap-4 p-4 bg-slate-50 rounded-2xl animate-in slide-in-from-top-2 duration-200 border border-slate-100">
-          <div className="flex-1 min-w-[200px]">
+        <div className="flex flex-col gap-4 p-5 bg-slate-50 rounded-2xl animate-in slide-in-from-top-2 duration-200 border border-slate-100">
+          <div className="w-full">
             <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Bild-URL</label>
             <form onSubmit={handleUrlSubmit} className="flex gap-2">
               <input
                 type="text"
                 value={customUrl}
                 onChange={(e) => setCustomUrl(e.target.value)}
-                placeholder="https://..."
-                className="flex-1 px-3 py-1.5 text-xs rounded-lg border border-slate-200 outline-none focus:ring-1 focus:ring-indigo-500"
+                placeholder="https://images.unsplash.com/..."
+                className="flex-1 px-3 py-2 text-xs rounded-lg border border-slate-200 outline-none focus:ring-1 focus:ring-indigo-500"
               />
-              <button className="bg-indigo-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold">OK</button>
+              <button className="bg-indigo-600 text-white px-4 py-2 rounded-lg text-xs font-bold hover:bg-indigo-700 transition-colors">Spara</button>
             </form>
           </div>
           
-          <div className="shrink-0">
-            <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Ladda upp fil</label>
+          <div className="w-full">
+            <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Ladda upp från datorn</label>
             <button 
               onClick={() => fileInputRef.current?.click()}
-              className="px-4 py-1.5 bg-white border border-slate-200 text-slate-600 rounded-lg text-xs font-bold hover:bg-slate-50"
+              className="w-full py-2 bg-white border border-slate-200 text-slate-600 rounded-lg text-xs font-bold hover:bg-slate-50 transition-colors"
             >
-              Välj bild...
+              Välj bildfil...
             </button>
             <input 
               ref={fileInputRef}

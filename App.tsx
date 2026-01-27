@@ -12,6 +12,7 @@ import InstructionTools from './components/InstructionTools';
 import PollingTool from './components/PollingTool';
 import WidgetFrame from './components/WidgetFrame';
 import BackgroundSelector from './components/BackgroundSelector';
+import Dashboard from './components/Dashboard';
 
 const App: React.FC = () => {
   const [background, setBackground] = useState(() => {
@@ -59,6 +60,58 @@ const App: React.FC = () => {
     }
   };
 
+  const getInitialDimensions = (type: ToolType) => {
+    switch (type) {
+      case ToolType.INSTRUCTIONS: return { width: 950, height: 650 };
+      case ToolType.POLLING: return { width: 850, height: 600 };
+      case ToolType.TRAFFIC_LIGHT: return { width: 850, height: 650 };
+      case ToolType.GROUPING: return { width: 850, height: 600 };
+      case ToolType.ASSISTANT: return { width: 650, height: 750 };
+      case ToolType.RANDOMIZER: return { width: 850, height: 600 };
+      case ToolType.TIMER: return { width: 600, height: 650 };
+      case ToolType.NOISE_METER: return { width: 400, height: 550 };
+      default: return { width: 700, height: 550 };
+    }
+  };
+
+  const findSmartPosition = (width: number, height: number) => {
+    const sidebarWidth = isSidebarOpen ? (window.innerWidth < 768 ? 80 : 288) : 0;
+    const margin = 100;
+    const availableWidth = window.innerWidth - sidebarWidth - width - margin;
+    const availableHeight = window.innerHeight - height - margin;
+
+    const slots = [
+      { x: sidebarWidth + 50, y: 80 },
+      { x: sidebarWidth + (availableWidth / 2), y: 80 },
+      { x: sidebarWidth + availableWidth, y: 80 },
+      { x: sidebarWidth + 50, y: availableHeight / 2 },
+      { x: sidebarWidth + availableWidth, y: availableHeight / 2 },
+    ];
+
+    const openWidgets = widgets.filter(w => w.isOpen);
+    if (openWidgets.length === 0) return slots[0];
+
+    let bestSlot = slots[0];
+    let maxMinDistance = -1;
+
+    slots.forEach(slot => {
+      let minDistance = Infinity;
+      openWidgets.forEach(w => {
+        const dx = (slot.x + width/2) - (w.x + (w.width || 0)/2);
+        const dy = (slot.y + height/2) - (w.y + (w.height || 0)/2);
+        const dist = Math.sqrt(dx*dx + dy*dy);
+        if (dist < minDistance) minDistance = dist;
+      });
+
+      if (minDistance > maxMinDistance) {
+        maxMinDistance = minDistance;
+        bestSlot = slot;
+      }
+    });
+
+    return bestSlot;
+  };
+
   const toggleWidget = (type: ToolType) => {
     const existing = widgets.find(w => w.type === type);
     const newZ = maxZIndex + 1;
@@ -69,18 +122,18 @@ const App: React.FC = () => {
         w.type === type ? { ...w, isOpen: !w.isOpen, zIndex: newZ } : w
       ));
     } else {
-      const openCount = widgets.filter(w => w.isOpen).length;
-      const offset = (openCount % 5) * 60;
+      const { width, height } = getInitialDimensions(type);
+      const pos = findSmartPosition(width, height);
       
       const newWidget: WidgetInstance = {
         id: Math.random().toString(36).substr(2, 9),
         type,
-        x: 80 + offset,
-        y: 80 + offset,
+        x: pos.x,
+        y: pos.y,
         zIndex: newZ,
         isOpen: true,
-        width: type === ToolType.INSTRUCTIONS || type === ToolType.POLLING ? 700 : 450,
-        height: 400
+        width,
+        height
       };
       setWidgets([...widgets, newWidget]);
     }
@@ -91,30 +144,27 @@ const App: React.FC = () => {
     if (openWidgets.length === 0) return;
 
     const margin = 24;
+    const topBarHeight = 80;
     const sidebarWidth = isSidebarOpen ? (window.innerWidth < 768 ? 80 : 288) : 0;
-    const availableWidth = window.innerWidth - sidebarWidth - (margin * 2);
     
-    let currentX = margin;
-    let currentY = 80; 
+    let currentX = margin + sidebarWidth;
+    let currentY = topBarHeight; 
     let rowMaxHeight = 0;
 
     const newWidgets = widgets.map(w => {
       if (!w.isOpen) return w;
+      const wWidth = w.width || 700;
+      const wHeight = w.height || 550;
 
-      const wWidth = w.width || 450;
-      const wHeight = w.height || 400;
-
-      if (currentX + wWidth > availableWidth && currentX > margin) {
-        currentX = margin;
+      if (currentX + wWidth > window.innerWidth - margin && currentX > margin + sidebarWidth) {
+        currentX = margin + sidebarWidth;
         currentY += rowMaxHeight + margin;
         rowMaxHeight = 0;
       }
 
       const updated = { ...w, x: currentX, y: currentY };
-      
       currentX += wWidth + margin;
       rowMaxHeight = Math.max(rowMaxHeight, wHeight);
-
       return updated;
     });
 
@@ -189,30 +239,46 @@ const App: React.FC = () => {
       </div>
 
       <main className="flex-1 relative overflow-hidden h-full">
-        <div className="absolute inset-0">
+        {/* Workspace Area */}
+        <div className="absolute inset-0 z-10 pointer-events-none">
           {activeWidgets.map((w) => {
             const config = getWidgetConfig(w.type);
             if (!config) return null;
             return (
-              <WidgetFrame
-                key={w.type}
-                title={config.title}
-                icon={config.icon}
-                x={w.x}
-                y={w.y}
-                zIndex={w.zIndex}
-                initialWidth={w.width}
-                initialHeight={w.height}
-                onMove={(x, y) => moveWidget(w.type, x, y)}
-                onResize={(width, height) => resizeWidget(w.type, width, height)}
-                onFocus={() => focusWidget(w.type)}
-                onClose={() => closeWidget(w.type)}
-              >
-                {config.component}
-              </WidgetFrame>
+              <div key={w.type} className="pointer-events-auto">
+                <WidgetFrame
+                  title={config.title}
+                  icon={config.icon}
+                  x={w.x}
+                  y={w.y}
+                  zIndex={w.zIndex}
+                  initialWidth={w.width}
+                  initialHeight={w.height}
+                  onMove={(x, y) => moveWidget(w.type, x, y)}
+                  onResize={(width, height) => resizeWidget(w.type, width, height)}
+                  onFocus={() => focusWidget(w.type)}
+                  onClose={() => closeWidget(w.type)}
+                >
+                  {config.component}
+                </WidgetFrame>
+              </div>
             );
           })}
         </div>
+
+        {/* Dashboard Landing Page */}
+        {activeWidgets.length === 0 && !isBackgroundSettingsOpen && (
+          <div className="absolute inset-0 flex items-center justify-center p-6 z-0">
+             <div className="w-full max-w-5xl overflow-y-auto max-h-[90vh] custom-scrollbar">
+                <Dashboard 
+                  onSelectTool={handleSelectTool} 
+                  studentsCount={students.length}
+                  currentBackground={background}
+                  onBackgroundSelect={handleSelectBackground}
+                />
+             </div>
+          </div>
+        )}
 
         {isBackgroundSettingsOpen && (
           <div className="absolute inset-0 z-[10000] flex items-center justify-center bg-slate-900/40 backdrop-blur-md animate-in fade-in duration-300">
