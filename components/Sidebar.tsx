@@ -20,13 +20,16 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTool, onSelectTool, onClose }) 
   const [hoveredTool, setHoveredTool] = useState<ToolInfo | null>(null);
 
   const tools: ToolInfo[] = [
-    { type: ToolType.INSTRUCTIONS, label: 'Instruktioner', icon: '📝', desc: 'Skriv, rita eller visa QR-koder på tavlan.', color: 'bg-amber-100 text-amber-600' },
-    { type: ToolType.TIMER, label: 'Timer', icon: '⏱️', desc: 'Sätt fokus med en visuell nedräkning.', color: 'bg-blue-100 text-blue-600' },
-    { type: ToolType.POLLING, label: 'Omröstning', icon: '📊', desc: 'Stäm av läget med snabba frågor.', color: 'bg-indigo-100 text-indigo-600' },
-    { type: ToolType.RANDOMIZER, label: 'Slumpa Elev', icon: '🎲', desc: 'Välj en elev på ett rättvist sätt.', color: 'bg-purple-100 text-purple-600' },
-    { type: ToolType.NOISE_METER, label: 'Ljudmätare', icon: '🔊', desc: 'Håll ljudnivån på en bra nivå.', color: 'bg-green-100 text-green-600' },
+    { type: ToolType.CHECKLIST, label: 'Arbetsgång', icon: '✅', desc: 'Skapa tydliga checklistor med timers och fokusläge.', color: 'bg-emerald-100 text-emerald-600' },
     { type: ToolType.TRAFFIC_LIGHT, label: 'Trafikljus', icon: '🚦', desc: 'Kommunicera tydligt med färg.', color: 'bg-red-100 text-red-600' },
+    { type: ToolType.RANDOMIZER, label: 'Slumpa Elev', icon: '🎲', desc: 'Välj en elev på ett rättvist sätt.', color: 'bg-rose-100 text-rose-600' },
     { type: ToolType.GROUPING, label: 'Gruppering', icon: '👥', desc: 'Skapa slumpmässiga studiegrupper.', color: 'bg-orange-100 text-orange-600' },
+    { type: ToolType.TIMER, label: 'Timer', icon: '⏱️', desc: 'Sätt fokus med en visuell nedräkning.', color: 'bg-indigo-100 text-indigo-600' },
+    { type: ToolType.WHITEBOARD, label: 'Whiteboard', icon: '🎨', desc: 'Rita och förklara visuellt på tavlan.', color: 'bg-blue-100 text-blue-600' },
+    { type: ToolType.IMAGE_ANNOTATOR, label: 'Bild-rita', icon: '📸', desc: 'Ladda upp en bild och gör anteckningar ovanpå.', color: 'bg-pink-100 text-pink-600' },
+    { type: ToolType.QR_CODE, label: 'QR-Kod', icon: '📱', desc: 'Dela länkar snabbt via QR-koder.', color: 'bg-purple-100 text-purple-600' },
+    { type: ToolType.POLLING, label: 'Omröstning', icon: '📊', desc: 'Stäm av läget med snabba frågor.', color: 'bg-amber-100 text-amber-600' },
+    { type: ToolType.NOISE_METER, label: 'Ljudmätare', icon: '🔊', desc: 'Håll ljudnivån på en bra nivå.', color: 'bg-cyan-100 text-cyan-600' },
     { type: ToolType.ASSISTANT, label: 'AI Assistent', icon: '✨', desc: 'Lektionsidéer direkt från Gemini.', color: 'bg-indigo-100 text-indigo-600' },
     { type: ToolType.MATTEYTAN, label: 'Matteytan', icon: '🔢', desc: 'Matematikövningar för alla årskurser.', color: 'bg-teal-100 text-teal-600' },
   ];
@@ -72,7 +75,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTool, onSelectTool, onClose }) 
         )}
       </div>
       
-      <nav className="flex-1 p-3 flex flex-col gap-1 overflow-y-auto relative">
+      <nav className="flex-1 p-3 flex flex-col gap-1 overflow-y-auto relative custom-scrollbar">
         {tools.map(renderButton)}
 
         {/* Floating Info Tooltip */}

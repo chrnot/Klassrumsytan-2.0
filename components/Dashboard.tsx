@@ -12,10 +12,10 @@ interface DashboardProps {
 
 const Dashboard: React.FC<DashboardProps> = ({ onSelectTool, studentsCount, currentBackground, onBackgroundSelect }) => {
   const cards = [
-    { type: ToolType.INSTRUCTIONS, title: 'Instruktioner', desc: 'Skriv, rita eller visa QR-koder.', icon: '📝', color: 'bg-amber-100 text-amber-600' },
-    { type: ToolType.TIMER, title: 'Timer', desc: 'Sätt fokus med nedräkning.', icon: '⏱️', color: 'bg-blue-100 text-blue-600' },
-    { type: ToolType.RANDOMIZER, title: 'Slumpa', desc: 'Välj en elev rättvist.', icon: '🎲', color: 'bg-purple-100 text-purple-600' },
-    { type: ToolType.TRAFFIC_LIGHT, title: 'Status', desc: 'Styr energin i rummet.', icon: '🚦', color: 'bg-red-100 text-red-600' },
+    { type: ToolType.CHECKLIST, title: 'Arbetsgång', desc: 'Planera lektionen stegvis.', icon: '✅', color: 'bg-emerald-100 text-emerald-600' },
+    { type: ToolType.WHITEBOARD, title: 'Whiteboard', desc: 'Rita och förklara visuellt.', icon: '🎨', color: 'bg-blue-100 text-blue-600' },
+    { type: ToolType.TIMER, title: 'Timer', desc: 'Sätt fokus med nedräkning.', icon: '⏱️', color: 'bg-indigo-100 text-indigo-600' },
+    { type: ToolType.RANDOMIZER, title: 'Slumpa', desc: 'Välj en elev rättvist.', icon: '🎲', color: 'bg-rose-100 text-rose-600' },
   ];
 
   return (

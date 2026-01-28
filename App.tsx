@@ -8,11 +8,14 @@ import NoiseMeter from './components/NoiseMeter';
 import TrafficLight from './components/TrafficLight';
 import GroupingTool from './components/GroupingTool';
 import GeminiAssistant from './components/GeminiAssistant';
-import InstructionTools from './components/InstructionTools';
+import SmartChecklist from './components/SmartChecklist';
+import Whiteboard from './components/Whiteboard';
+import QRCodeWidget from './components/QRCodeWidget';
 import PollingTool from './components/PollingTool';
 import WidgetFrame from './components/WidgetFrame';
 import BackgroundSelector from './components/BackgroundSelector';
 import Dashboard from './components/Dashboard';
+import ImageAnnotator from './components/ImageAnnotator';
 
 const App: React.FC = () => {
   const [background, setBackground] = useState(() => {
@@ -62,9 +65,12 @@ const App: React.FC = () => {
 
   const getInitialDimensions = (type: ToolType) => {
     switch (type) {
-      case ToolType.INSTRUCTIONS: return { width: 950, height: 650 };
+      case ToolType.CHECKLIST: return { width: 500, height: 600 };
+      case ToolType.WHITEBOARD: return { width: 850, height: 650 };
+      case ToolType.IMAGE_ANNOTATOR: return { width: 850, height: 650 };
+      case ToolType.QR_CODE: return { width: 400, height: 500 };
       case ToolType.POLLING: return { width: 850, height: 600 };
-      case ToolType.TRAFFIC_LIGHT: return { width: 850, height: 650 };
+      case ToolType.TRAFFIC_LIGHT: return { width: 850, height: 600 };
       case ToolType.GROUPING: return { width: 850, height: 600 };
       case ToolType.ASSISTANT: return { width: 650, height: 750 };
       case ToolType.RANDOMIZER: return { width: 850, height: 600 };
@@ -202,7 +208,10 @@ const App: React.FC = () => {
       case ToolType.TRAFFIC_LIGHT: return { title: 'Trafikljus', icon: '🚦', component: <TrafficLight /> };
       case ToolType.GROUPING: return { title: 'Gruppering', icon: '👥', component: <GroupingTool students={students} /> };
       case ToolType.ASSISTANT: return { title: 'AI Assistent', icon: '✨', component: <GeminiAssistant /> };
-      case ToolType.INSTRUCTIONS: return { title: 'Instruktioner', icon: '📝', component: <InstructionTools /> };
+      case ToolType.CHECKLIST: return { title: 'Arbetsgång', icon: '✅', component: <SmartChecklist /> };
+      case ToolType.WHITEBOARD: return { title: 'Whiteboard', icon: '🎨', component: <Whiteboard /> };
+      case ToolType.IMAGE_ANNOTATOR: return { title: 'Bild-rita', icon: '📸', component: <ImageAnnotator /> };
+      case ToolType.QR_CODE: return { title: 'QR-Kod', icon: '📱', component: <QRCodeWidget /> };
       case ToolType.POLLING: return { title: 'Omröstning', icon: '📊', component: <PollingTool /> };
       default: return null;
     }

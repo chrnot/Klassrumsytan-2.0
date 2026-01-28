@@ -17,10 +17,13 @@ export enum ToolType {
   TRAFFIC_LIGHT = 'TRAFFIC_LIGHT',
   GROUPING = 'GROUPING',
   ASSISTANT = 'ASSISTANT',
-  INSTRUCTIONS = 'INSTRUCTIONS',
+  CHECKLIST = 'CHECKLIST',
+  WHITEBOARD = 'WHITEBOARD',
+  QR_CODE = 'QR_CODE',
   BACKGROUND = 'BACKGROUND',
   POLLING = 'POLLING',
-  MATTEYTAN = 'MATTEYTAN'
+  MATTEYTAN = 'MATTEYTAN',
+  IMAGE_ANNOTATOR = 'IMAGE_ANNOTATOR'
 }
 
 export interface WidgetInstance {
@@ -41,4 +44,13 @@ export interface AppSettings {
 export interface Message {
   role: 'user' | 'assistant';
   content: string;
+}
+
+export interface ChecklistItem {
+  id: string;
+  text: string;
+  completed: boolean;
+  isSpotlight: boolean;
+  timerSeconds?: number;
+  hasLink?: string;
 }

@@ -7,8 +7,11 @@ enum TimerMode {
   CLOCK = 'CLOCK'
 }
 
+type ClockType = 'digital' | 'analog';
+
 const Timer: React.FC = () => {
   const [mode, setMode] = useState<TimerMode>(TimerMode.COUNTDOWN);
+  const [clockType, setClockType] = useState<ClockType>('digital');
   
   // Countdown states
   const [seconds, setSeconds] = useState(0);
@@ -89,15 +92,25 @@ const Timer: React.FC = () => {
     setIsActive(false);
   };
 
-  // Circular progress calculation - More compact radius
+  // Circular progress calculation
   const radius = 85;
   const circumference = 2 * Math.PI * radius;
   const offset = initialTime > 0 ? circumference - (seconds / initialTime) * circumference : circumference;
 
+  // Analog Clock Calculations
+  const now = currentTime;
+  const s = now.getSeconds();
+  const m = now.getMinutes();
+  const h = now.getHours();
+
+  const secondDeg = (s / 60) * 360;
+  const minuteDeg = (m / 60) * 360 + (s / 60) * 6;
+  const hourDeg = ((h % 12) / 12) * 360 + (m / 60) * 30;
+
   return (
     <div className="flex flex-col items-center space-y-6 animate-in fade-in duration-500">
       {/* Mode Switcher */}
-      <div className="flex bg-white p-1 rounded-2xl border border-slate-200 shadow-sm w-fit">
+      <div className="flex bg-white p-1 rounded-2xl border border-slate-200 shadow-sm w-fit shrink-0">
         {Object.values(TimerMode).map((m) => (
           <button
             key={m}
@@ -113,14 +126,13 @@ const Timer: React.FC = () => {
         ))}
       </div>
 
-      <div className="w-full max-w-2xl bg-white p-6 md:p-8 rounded-[2.5rem] shadow-xl border border-slate-100 flex flex-col items-center relative overflow-hidden">
+      <div className="w-full max-w-2xl bg-white p-6 md:p-8 rounded-[2.5rem] shadow-xl border border-slate-100 flex flex-col items-center relative overflow-hidden flex-1 min-h-0">
         
         {mode === TimerMode.COUNTDOWN && (
           <div className="w-full flex flex-col items-center animate-in zoom-in-95 duration-300">
             <h2 className="text-slate-400 font-medium uppercase tracking-widest text-[10px] mb-4">Arbetspass</h2>
             
             <div className="relative flex items-center justify-center mb-6">
-              {/* SVG Visual Timer - Reduced size */}
               <svg className="w-48 h-48 md:w-56 md:h-56 transform -rotate-90">
                 <circle
                   cx="50%"
@@ -171,18 +183,8 @@ const Timer: React.FC = () => {
             </div>
 
             <div className="flex gap-2 mb-6">
-              <button 
-                onClick={() => addTime(1)}
-                className="bg-indigo-50 text-indigo-700 px-3 py-1.5 rounded-xl font-bold hover:bg-indigo-100 border border-indigo-100 transition-all text-[10px]"
-              >
-                +1 min
-              </button>
-              <button 
-                onClick={() => addTime(5)}
-                className="bg-indigo-50 text-indigo-700 px-3 py-1.5 rounded-xl font-bold hover:bg-indigo-100 border border-indigo-100 transition-all text-[10px]"
-              >
-                +5 min
-              </button>
+              <button onClick={() => addTime(1)} className="bg-indigo-50 text-indigo-700 px-3 py-1.5 rounded-xl font-bold hover:bg-indigo-100 border border-indigo-100 transition-all text-[10px]">+1 min</button>
+              <button onClick={() => addTime(5)} className="bg-indigo-50 text-indigo-700 px-3 py-1.5 rounded-xl font-bold hover:bg-indigo-100 border border-indigo-100 transition-all text-[10px]">+5 min</button>
             </div>
 
             <div className="grid grid-cols-4 md:grid-cols-8 gap-1.5 w-full pt-4 border-t border-slate-50">
@@ -232,23 +234,96 @@ const Timer: React.FC = () => {
         )}
 
         {mode === TimerMode.CLOCK && (
-          <div className="w-full flex flex-col items-center justify-center py-8 animate-in fade-in zoom-in-95 duration-500">
-            <h2 className="text-slate-400 font-medium uppercase tracking-widest text-[10px] mb-4">Aktuell tid</h2>
-            <div className="text-5xl md:text-7xl font-black text-slate-800 tabular-nums tracking-tighter leading-none">
-              {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-              <span className="text-2xl md:text-3xl text-indigo-400 font-medium ml-2">
-                {currentTime.toLocaleTimeString([], { second: '2-digit' })}
-              </span>
+          <div className="w-full h-full flex flex-col items-center animate-in fade-in zoom-in-95 duration-500">
+            {/* Clock Type Toggle */}
+            <div className="flex bg-slate-50 p-1 rounded-xl border border-slate-200 mb-8 shrink-0">
+              <button
+                onClick={() => setClockType('digital')}
+                className={`px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
+                  clockType === 'digital' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400'
+                }`}
+              >
+                Digital
+              </button>
+              <button
+                onClick={() => setClockType('analog')}
+                className={`px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
+                  clockType === 'analog' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400'
+                }`}
+              >
+                Analog
+              </button>
             </div>
-            <div className="mt-4 text-lg text-slate-400 font-medium">
-              {currentTime.toLocaleDateString('sv-SE', { weekday: 'long', day: 'numeric', month: 'long' })}
+
+            <div className="flex-1 flex flex-col items-center justify-center w-full">
+              {clockType === 'digital' ? (
+                <div className="flex flex-col items-center justify-center">
+                  <h2 className="text-slate-400 font-medium uppercase tracking-widest text-[10px] mb-4">Aktuell tid</h2>
+                  <div className="text-6xl md:text-8xl font-black text-slate-800 tabular-nums tracking-tighter leading-none">
+                    {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    <span className="text-3xl md:text-4xl text-indigo-400 font-medium ml-2">
+                      {currentTime.toLocaleTimeString([], { second: '2-digit' })}
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <div className="relative w-64 h-64 md:w-80 md:h-80">
+                  {/* Analog Clock Face */}
+                  <div className="absolute inset-0 rounded-full border-[10px] border-slate-800 bg-white shadow-2xl flex items-center justify-center">
+                    {/* Tick Marks */}
+                    {[...Array(12)].map((_, i) => (
+                      <div
+                        key={i}
+                        className="absolute w-1.5 h-3 md:h-4 bg-slate-300 rounded-full"
+                        style={{
+                          transform: `rotate(${i * 30}deg) translateY(-${120}px)`,
+                          transformOrigin: '50% 50%',
+                        }}
+                      />
+                    ))}
+                    {/* Hour Hand */}
+                    <div 
+                      className="absolute w-2 h-20 md:h-24 bg-slate-800 rounded-full shadow-sm"
+                      style={{ 
+                        transform: `rotate(${hourDeg}deg) translateY(-40%)`,
+                        transformOrigin: '50% 100%',
+                        zIndex: 10 
+                      }}
+                    />
+                    {/* Minute Hand */}
+                    <div 
+                      className="absolute w-1.5 h-28 md:h-32 bg-slate-600 rounded-full shadow-sm"
+                      style={{ 
+                        transform: `rotate(${minuteDeg}deg) translateY(-45%)`,
+                        transformOrigin: '50% 100%',
+                        zIndex: 9 
+                      }}
+                    />
+                    {/* Second Hand */}
+                    <div 
+                      className="absolute w-0.5 h-32 md:h-36 bg-rose-500 rounded-full"
+                      style={{ 
+                        transform: `rotate(${secondDeg}deg) translateY(-50%)`,
+                        transformOrigin: '50% 100%',
+                        zIndex: 11 
+                      }}
+                    />
+                    {/* Center Point */}
+                    <div className="absolute w-4 h-4 bg-slate-800 rounded-full z-20 border-4 border-white shadow-sm" />
+                  </div>
+                </div>
+              )}
+              
+              <div className="mt-8 text-lg text-slate-400 font-medium shrink-0">
+                {currentTime.toLocaleDateString('sv-SE', { weekday: 'long', day: 'numeric', month: 'long' })}
+              </div>
             </div>
           </div>
         )}
 
       </div>
       
-      <p className="text-slate-400 text-[10px] font-medium text-center">
+      <p className="text-slate-400 text-[10px] font-medium text-center shrink-0">
         {mode === TimerMode.COUNTDOWN && "Ställ in en tid för att starta nedräkningen."}
         {mode === TimerMode.STOPWATCH && "Använd stoppuret för att mäta tidsåtgång."}
         {mode === TimerMode.CLOCK && "Hjälp klassen att hålla koll på tiden."}
