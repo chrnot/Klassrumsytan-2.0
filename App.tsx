@@ -16,6 +16,7 @@ import WidgetFrame from './components/WidgetFrame';
 import BackgroundSelector from './components/BackgroundSelector';
 import Dashboard from './components/Dashboard';
 import ImageAnnotator from './components/ImageAnnotator';
+import StudentPollView from './components/StudentPollView';
 
 const App: React.FC = () => {
   const [background, setBackground] = useState(() => {
@@ -24,6 +25,8 @@ const App: React.FC = () => {
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isBackgroundSettingsOpen, setIsBackgroundSettingsOpen] = useState(false);
+  const [isStudentMode, setIsStudentMode] = useState(false);
+  const [pollId, setPollId] = useState<string | null>(null);
 
   const [widgets, setWidgets] = useState<WidgetInstance[]>(() => {
     const saved = localStorage.getItem('kp_widgets');
@@ -37,11 +40,23 @@ const App: React.FC = () => {
 
   const [maxZIndex, setMaxZIndex] = useState(100);
 
+  // Check for Student Mode on mount
   useEffect(() => {
-    localStorage.setItem('kp_widgets', JSON.stringify(widgets));
-    localStorage.setItem('kp_background', background);
-    localStorage.setItem('kp_students', JSON.stringify(students));
-  }, [widgets, background, students]);
+    const params = new URLSearchParams(window.location.search);
+    const joinId = params.get('join');
+    if (joinId) {
+      setIsStudentMode(true);
+      setPollId(joinId);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!isStudentMode) {
+      localStorage.setItem('kp_widgets', JSON.stringify(widgets));
+      localStorage.setItem('kp_background', background);
+      localStorage.setItem('kp_students', JSON.stringify(students));
+    }
+  }, [widgets, background, students, isStudentMode]);
 
   const handleSelectBackground = (bg: string) => {
     setBackground(bg);
@@ -69,7 +84,7 @@ const App: React.FC = () => {
       case ToolType.WHITEBOARD: return { width: 850, height: 650 };
       case ToolType.IMAGE_ANNOTATOR: return { width: 850, height: 650 };
       case ToolType.QR_CODE: return { width: 400, height: 500 };
-      case ToolType.POLLING: return { width: 850, height: 600 };
+      case ToolType.POLLING: return { width: 850, height: 700 };
       case ToolType.TRAFFIC_LIGHT: return { width: 850, height: 600 };
       case ToolType.GROUPING: return { width: 850, height: 600 };
       case ToolType.ASSISTANT: return { width: 650, height: 750 };
@@ -90,32 +105,12 @@ const App: React.FC = () => {
       { x: sidebarWidth + 50, y: 80 },
       { x: sidebarWidth + (availableWidth / 2), y: 80 },
       { x: sidebarWidth + availableWidth, y: 80 },
-      { x: sidebarWidth + 50, y: availableHeight / 2 },
-      { x: sidebarWidth + availableWidth, y: availableHeight / 2 },
     ];
 
     const openWidgets = widgets.filter(w => w.isOpen);
     if (openWidgets.length === 0) return slots[0];
 
-    let bestSlot = slots[0];
-    let maxMinDistance = -1;
-
-    slots.forEach(slot => {
-      let minDistance = Infinity;
-      openWidgets.forEach(w => {
-        const dx = (slot.x + width/2) - (w.x + (w.width || 0)/2);
-        const dy = (slot.y + height/2) - (w.y + (w.height || 0)/2);
-        const dist = Math.sqrt(dx*dx + dy*dy);
-        if (dist < minDistance) minDistance = dist;
-      });
-
-      if (minDistance > maxMinDistance) {
-        maxMinDistance = minDistance;
-        bestSlot = slot;
-      }
-    });
-
-    return bestSlot;
+    return slots[openWidgets.length % slots.length];
   };
 
   const toggleWidget = (type: ToolType) => {
@@ -217,6 +212,10 @@ const App: React.FC = () => {
     }
   };
 
+  if (isStudentMode && pollId) {
+    return <StudentPollView pollId={pollId} />;
+  }
+
   const backgroundStyle = useMemo(() => {
     if (background.startsWith('#')) return { backgroundColor: background };
     if (background.startsWith('http') || background.startsWith('data:image')) {
@@ -248,7 +247,6 @@ const App: React.FC = () => {
       </div>
 
       <main className="flex-1 relative overflow-hidden h-full">
-        {/* Workspace Area */}
         <div className="absolute inset-0 z-10 pointer-events-none">
           {activeWidgets.map((w) => {
             const config = getWidgetConfig(w.type);
@@ -275,7 +273,6 @@ const App: React.FC = () => {
           })}
         </div>
 
-        {/* Dashboard Landing Page */}
         {activeWidgets.length === 0 && !isBackgroundSettingsOpen && (
           <div className="absolute inset-0 flex items-center justify-center p-6 z-0">
              <div className="w-full max-w-5xl overflow-y-auto max-h-[90vh] custom-scrollbar">
