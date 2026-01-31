@@ -49,7 +49,6 @@ const TEMPLATES: PollTemplate[] = [
   }
 ];
 
-// Deep copy helper to avoid reference sharing
 const cloneOptions = (opts: PollOption[]) => JSON.parse(JSON.stringify(opts));
 
 const PollingTool: React.FC = () => {
@@ -58,36 +57,40 @@ const PollingTool: React.FC = () => {
   const [showResults, setShowResults] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   
-  // Live Sync States
-  const [isLive, setIsLive] = useState(false);
-  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [isLive, setIsLive] = useState(() => localStorage.getItem('kp_poll_live') === 'true');
+  const [sessionId, setSessionId] = useState<string | null>(() => localStorage.getItem('kp_poll_sid'));
   const [isSyncing, setIsSyncing] = useState(false);
   
   const pollInterval = useRef<number | null>(null);
+  const lastKnownVotes = useRef<Record<string, number>>({});
 
   const totalVotes = useMemo(() => options.reduce((acc, opt) => acc + opt.votes, 0), [options]);
 
   const handleVote = (id: string) => {
-    setOptions(prev => prev.map(opt => opt.id === id ? { ...opt, votes: opt.votes + 1 } : opt));
-    // If live, we should ideally push to server, but here teacher's screen is the visual aggregator
-    // when local votes are cast.
+    const nextOptions = options.map(opt => opt.id === id ? { ...opt, votes: opt.votes + 1 } : opt);
+    setOptions(nextOptions);
+    if (isLive && sessionId) {
+      syncOptionsToServer(nextOptions);
+    }
   };
 
   const applyTemplate = (templateId: string) => {
     const t = TEMPLATES.find(x => x.id === templateId);
     if (t) {
+      const newOpts = cloneOptions(t.options);
       setQuestion(t.question);
-      setOptions(cloneOptions(t.options));
+      setOptions(newOpts);
       setShowResults(false);
       setIsEditing(false);
-      stopLiveSession();
+      if (isLive && sessionId) syncOptionsToServer(newOpts, t.question);
     }
   };
 
   const resetVotes = () => {
-    setOptions(prev => prev.map(opt => ({ ...opt, votes: 0 })));
+    const resetOpts = options.map(opt => ({ ...opt, votes: 0 }));
+    setOptions(resetOpts);
     setShowResults(false);
-    if (isLive && sessionId) syncToLive();
+    if (isLive && sessionId) syncOptionsToServer(resetOpts);
   };
 
   // --- LIVE SYNC LOGIC ---
@@ -95,24 +98,23 @@ const PollingTool: React.FC = () => {
   const startLiveSession = async () => {
     setIsSyncing(true);
     try {
-      // We use a public simple CRUD API for the demo to avoid complex backend setup
       const response = await fetch('https://api.restful-api.dev/objects', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name: "Klassrumsytan_Poll",
-          data: { question, options, active: true }
+          name: "Klassrumsytan_Poll_V9",
+          data: { question, options, active: true, updatedAt: Date.now() }
         })
       });
       const data = await response.json();
       setSessionId(data.id);
       setIsLive(true);
+      localStorage.setItem('kp_poll_live', 'true');
+      localStorage.setItem('kp_poll_sid', data.id);
       
-      // Start polling for new votes every 3 seconds
-      pollInterval.current = window.setInterval(() => fetchResults(data.id), 3000);
+      startPolling(data.id);
     } catch (err) {
-      console.error("Failed to start live session", err);
-      alert("Kunde inte starta live-session. Kontrollera internetanslutningen.");
+      alert("Kunde inte ansluta till servern.");
     } finally {
       setIsSyncing(false);
     }
@@ -122,47 +124,76 @@ const PollingTool: React.FC = () => {
     if (pollInterval.current) clearInterval(pollInterval.current);
     setIsLive(false);
     setSessionId(null);
+    localStorage.removeItem('kp_poll_live');
+    localStorage.removeItem('kp_poll_sid');
+  };
+
+  const startPolling = (id: string) => {
+    if (pollInterval.current) clearInterval(pollInterval.current);
+    pollInterval.current = window.setInterval(() => fetchResults(id), 3000);
   };
 
   const fetchResults = async (id: string) => {
     try {
       const response = await fetch(`https://api.restful-api.dev/objects/${id}`);
       if (!response.ok) return;
-      const data = await response.json();
-      if (data.data && data.data.options) {
-        setOptions(data.data.options);
+      const serverData = await response.json();
+      
+      if (serverData.data && serverData.data.options) {
+        const serverOpts = serverData.data.options as PollOption[];
+        
+        // Jämför rösterna. Uppdatera bara om rösterna ökat för att undvika överlagring av nollställda värden
+        setOptions(current => {
+          let hasChanges = false;
+          const merged = current.map(localOpt => {
+            const sOpt = serverOpts.find(s => s.id === localOpt.id);
+            if (sOpt && sOpt.votes > localOpt.votes) {
+              hasChanges = true;
+              return { ...localOpt, votes: sOpt.votes };
+            }
+            return localOpt;
+          });
+          return hasChanges ? merged : current;
+        });
       }
     } catch (err) {
-      console.error("Polling error", err);
+      console.warn("Polling error");
     }
   };
 
-  const syncToLive = async () => {
+  const syncOptionsToServer = async (newOpts: PollOption[], newQuestion?: string) => {
     if (!sessionId) return;
     try {
       await fetch(`https://api.restful-api.dev/objects/${sessionId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name: "Klassrumsytan_Poll",
-          data: { question, options, active: true }
+          name: "Klassrumsytan_Poll_V9",
+          data: { 
+            question: newQuestion || question, 
+            options: newOpts, 
+            active: true,
+            updatedAt: Date.now()
+          }
         })
       });
     } catch (err) {
-      console.error("Sync error", err);
+      console.error("Sync error");
     }
   };
 
   useEffect(() => {
+    if (isLive && sessionId) {
+      startPolling(sessionId);
+    }
     return () => { if (pollInterval.current) clearInterval(pollInterval.current); };
-  }, []);
+  }, [isLive, sessionId]);
 
   const shareLink = `${window.location.origin}${window.location.pathname}?join=${sessionId}`;
 
   return (
     <div className="flex flex-col h-full gap-6 animate-in fade-in duration-500 overflow-y-auto custom-scrollbar pr-2 pb-10">
       
-      {/* Header med Kontroller */}
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 pb-6 shrink-0">
         <div>
           <h2 className="text-2xl font-black text-slate-800 flex items-center gap-3">
@@ -204,7 +235,6 @@ const PollingTool: React.FC = () => {
         </div>
       </header>
 
-      {/* Live Status & QR (bara om live är aktivt) */}
       {isLive && sessionId && (
         <div className="bg-emerald-50 border border-emerald-100 p-6 rounded-[2.5rem] flex flex-col md:flex-row items-center gap-8 animate-in slide-in-from-top-4">
           <div className="shrink-0 bg-white p-4 rounded-3xl shadow-sm">
@@ -228,7 +258,6 @@ const PollingTool: React.FC = () => {
         </div>
       )}
 
-      {/* Redigeringsläge */}
       {isEditing ? (
         <div className="space-y-6 animate-in fade-in duration-300">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -297,7 +326,6 @@ const PollingTool: React.FC = () => {
             ))}
           </div>
 
-          {/* Resultatvisning */}
           <div className="max-w-4xl mx-auto w-full bg-slate-50/50 p-10 rounded-[4rem] border border-slate-100">
             <div className="flex items-center justify-between mb-10">
               <div>

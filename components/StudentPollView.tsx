@@ -43,30 +43,35 @@ const StudentPollView: React.FC<StudentPollViewProps> = ({ pollId }) => {
 
   const vote = async (optionId: string) => {
     if (hasVoted || !poll) return;
+    
+    // Optimistisk uppdatering: Visa tack-skärmen direkt
     setHasVoted(true);
 
     try {
-      // Step 1: Get freshest data
+      // Step 1: Hämta absolut senaste data för att undvika överlapp
       const response = await fetch(`https://api.restful-api.dev/objects/${pollId}`);
+      if (!response.ok) throw new Error();
       const latest = await response.json();
       
-      // Step 2: Increment
+      // Step 2: Inkrementera
       const updatedOptions = latest.data.options.map((opt: PollOption) => 
         opt.id === optionId ? { ...opt, votes: opt.votes + 1 } : opt
       );
 
-      // Step 3: Put back
+      // Step 3: Spara tillbaka
       await fetch(`https://api.restful-api.dev/objects/${pollId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name: "Klassrumsytan_Poll",
-          data: { ...latest.data, options: updatedOptions }
+          name: "Klassrumsytan_Poll_V9",
+          data: { ...latest.data, options: updatedOptions, updatedAt: Date.now() }
         })
       });
     } catch (err) {
-      console.error("Vote failed", err);
-      setHasVoted(false); // Let them try again if it failed
+      console.error("Vote failed");
+      // Om röstningen misslyckas helt, tillåt nytt försök
+      setHasVoted(false);
+      alert("Något gick fel när rösten skickades. Försök igen!");
     }
   };
 
@@ -84,7 +89,7 @@ const StudentPollView: React.FC<StudentPollViewProps> = ({ pollId }) => {
       <div className="h-screen w-screen flex flex-col items-center justify-center bg-slate-50 p-10 text-center">
         <div className="text-6xl mb-6">⚠️</div>
         <h2 className="text-2xl font-black text-slate-800 mb-2">Hittade inte omröstningen</h2>
-        <p className="text-slate-500 mb-8">Koden är antingen gammal eller felaktig.</p>
+        <p className="text-slate-500 mb-8">Läraren kan ha avslutat sessionen eller så är länken felaktig.</p>
         <button 
           onClick={() => window.location.href = window.location.origin}
           className="bg-indigo-600 text-white px-8 py-4 rounded-2xl font-bold shadow-lg shadow-indigo-100"
@@ -130,7 +135,7 @@ const StudentPollView: React.FC<StudentPollViewProps> = ({ pollId }) => {
       </div>
 
       <footer className="mt-8 text-center text-[10px] font-bold text-slate-300 uppercase tracking-widest">
-        Drivs av Klassrumsytan.se
+        Klassrumsytan.se
       </footer>
     </div>
   );

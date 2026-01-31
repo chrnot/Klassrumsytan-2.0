@@ -19,14 +19,20 @@ import ImageAnnotator from './components/ImageAnnotator';
 import StudentPollView from './components/StudentPollView';
 
 const App: React.FC = () => {
+  // Omedelbar check för elevläge för att undvika "blank sida"
+  const [isStudentMode] = useState(() => {
+    return !!new URLSearchParams(window.location.search).get('join');
+  });
+  const [pollId] = useState(() => {
+    return new URLSearchParams(window.location.search).get('join');
+  });
+
   const [background, setBackground] = useState(() => {
     return localStorage.getItem('kp_background') || 'bg-slate-100';
   });
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isBackgroundSettingsOpen, setIsBackgroundSettingsOpen] = useState(false);
-  const [isStudentMode, setIsStudentMode] = useState(false);
-  const [pollId, setPollId] = useState<string | null>(null);
 
   const [widgets, setWidgets] = useState<WidgetInstance[]>(() => {
     const saved = localStorage.getItem('kp_widgets');
@@ -39,16 +45,6 @@ const App: React.FC = () => {
   });
 
   const [maxZIndex, setMaxZIndex] = useState(100);
-
-  // Check for Student Mode on mount
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const joinId = params.get('join');
-    if (joinId) {
-      setIsStudentMode(true);
-      setPollId(joinId);
-    }
-  }, []);
 
   useEffect(() => {
     if (!isStudentMode) {
@@ -84,7 +80,7 @@ const App: React.FC = () => {
       case ToolType.WHITEBOARD: return { width: 850, height: 650 };
       case ToolType.IMAGE_ANNOTATOR: return { width: 850, height: 650 };
       case ToolType.QR_CODE: return { width: 400, height: 500 };
-      case ToolType.POLLING: return { width: 850, height: 700 };
+      case ToolType.POLLING: return { width: 850, height: 750 };
       case ToolType.TRAFFIC_LIGHT: return { width: 850, height: 600 };
       case ToolType.GROUPING: return { width: 850, height: 600 };
       case ToolType.ASSISTANT: return { width: 650, height: 750 };
