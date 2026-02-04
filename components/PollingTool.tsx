@@ -16,44 +16,56 @@ interface PollTemplate {
   options: PollOption[];
 }
 
+const COLORS = ['bg-emerald-500', 'bg-amber-400', 'bg-rose-500', 'bg-indigo-500', 'bg-purple-500', 'bg-cyan-500'];
+
 const TEMPLATES: PollTemplate[] = [
   {
-    id: 'default',
+    id: 'true-false',
+    title: 'Sant / Falskt',
+    question: 'Är påståendet sant?',
+    options: [
+      { id: '1', label: 'Sant', icon: '✅', votes: 0, color: 'bg-emerald-500' },
+      { id: '2', label: 'Falskt', icon: '❌', votes: 0, color: 'bg-rose-500' }
+    ]
+  },
+  {
+    id: 'choice-3',
+    title: 'Flerval (3)',
+    question: 'Vilket svar är rätt?',
+    options: [
+      { id: '1', label: 'Svar A', icon: 'A', votes: 0, color: 'bg-indigo-500' },
+      { id: '2', label: 'Svar B', icon: 'B', votes: 0, color: 'bg-purple-500' },
+      { id: '3', label: 'Svar C', icon: 'C', votes: 0, color: 'bg-cyan-500' }
+    ]
+  },
+  {
+    id: 'choice-4',
+    title: 'Flerval (4)',
+    question: 'Välj ett alternativ:',
+    options: [
+      { id: '1', label: 'Alt 1', icon: '1', votes: 0, color: 'bg-indigo-500' },
+      { id: '2', label: 'Alt 2', icon: '2', votes: 0, color: 'bg-indigo-500' },
+      { id: '3', label: 'Alt 3', icon: '3', votes: 0, color: 'bg-indigo-500' },
+      { id: '4', label: 'Alt 4', icon: '4', votes: 0, color: 'bg-indigo-500' }
+    ]
+  },
+  {
+    id: 'feeling',
     title: 'Snabbkoll',
-    question: 'Känslan inför uppgiften?',
+    question: 'Hur känns det just nu?',
     options: [
-      { id: '1', label: 'Lätt', icon: '😃', votes: 0, color: 'bg-emerald-500' },
+      { id: '1', label: 'Bra', icon: '😃', votes: 0, color: 'bg-emerald-500' },
       { id: '2', label: 'Okej', icon: '😐', votes: 0, color: 'bg-amber-400' },
-      { id: '3', label: 'Svårt', icon: '😟', votes: 0, color: 'bg-red-500' }
-    ]
-  },
-  {
-    id: 'exit-ticket',
-    title: 'Exit Ticket',
-    question: 'Hur väl förstod du dagens genomgång?',
-    options: [
-      { id: '1', label: 'Full koll!', icon: '🟢', votes: 0, color: 'bg-emerald-500' },
-      { id: '2', label: 'Lite osäker', icon: '🟡', votes: 0, color: 'bg-amber-400' },
-      { id: '3', label: 'Behöver hjälp', icon: '🔴', votes: 0, color: 'bg-red-500' }
-    ]
-  },
-  {
-    id: 'temp',
-    title: 'Energi',
-    question: 'Hur är din energinivå just nu?',
-    options: [
-      { id: '1', label: 'Toppen!', icon: '🚀', votes: 0, color: 'bg-indigo-500' },
-      { id: '2', label: 'Okej', icon: '😐', votes: 0, color: 'bg-slate-400' },
-      { id: '3', label: 'Trött', icon: '💤', votes: 0, color: 'bg-amber-600' }
+      { id: '3', label: 'Svårt', icon: '😟', votes: 0, color: 'bg-rose-500' }
     ]
   }
 ];
 
-const cloneOptions = (opts: PollOption[]) => JSON.parse(JSON.stringify(opts));
+const API_BASE = 'https://api.restful-api.dev/objects';
 
 const PollingTool: React.FC = () => {
   const [question, setQuestion] = useState(TEMPLATES[0].question);
-  const [options, setOptions] = useState<PollOption[]>(cloneOptions(TEMPLATES[0].options));
+  const [options, setOptions] = useState<PollOption[]>(() => JSON.parse(JSON.stringify(TEMPLATES[0].options)));
   const [showResults, setShowResults] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   
@@ -62,59 +74,68 @@ const PollingTool: React.FC = () => {
   const [isSyncing, setIsSyncing] = useState(false);
   
   const pollInterval = useRef<number | null>(null);
-  const lastKnownVotes = useRef<Record<string, number>>({});
+  const lastUpdateRef = useRef<number>(0);
 
   const totalVotes = useMemo(() => options.reduce((acc, opt) => acc + opt.votes, 0), [options]);
+
+  const resetVotes = () => {
+    const nextOptions = options.map(opt => ({ ...opt, votes: 0 }));
+    setOptions(nextOptions);
+    if (isLive && sessionId) syncToServer(nextOptions);
+  };
 
   const handleVote = (id: string) => {
     const nextOptions = options.map(opt => opt.id === id ? { ...opt, votes: opt.votes + 1 } : opt);
     setOptions(nextOptions);
-    if (isLive && sessionId) {
-      syncOptionsToServer(nextOptions);
-    }
+    if (isLive && sessionId) syncToServer(nextOptions);
   };
 
-  const applyTemplate = (templateId: string) => {
-    const t = TEMPLATES.find(x => x.id === templateId);
-    if (t) {
-      const newOpts = cloneOptions(t.options);
-      setQuestion(t.question);
-      setOptions(newOpts);
-      setShowResults(false);
-      setIsEditing(false);
-      if (isLive && sessionId) syncOptionsToServer(newOpts, t.question);
-    }
+  const addOption = () => {
+    if (options.length >= 6) return;
+    const newId = (options.length + 1).toString();
+    const newOption: PollOption = {
+      id: newId,
+      label: `Alternativ ${newId}`,
+      icon: newId,
+      votes: 0,
+      color: COLORS[options.length % COLORS.length]
+    };
+    setOptions([...options, newOption]);
   };
 
-  const resetVotes = () => {
-    const resetOpts = options.map(opt => ({ ...opt, votes: 0 }));
-    setOptions(resetOpts);
-    setShowResults(false);
-    if (isLive && sessionId) syncOptionsToServer(resetOpts);
+  const removeOption = (id: string) => {
+    if (options.length <= 2) return;
+    setOptions(options.filter(o => o.id !== id));
   };
 
-  // --- LIVE SYNC LOGIC ---
+  const updateOption = (id: string, field: keyof PollOption, value: string) => {
+    setOptions(prev => prev.map(o => o.id === id ? { ...o, [field]: value } : o));
+  };
 
   const startLiveSession = async () => {
     setIsSyncing(true);
     try {
-      const response = await fetch('https://api.restful-api.dev/objects', {
+      localStorage.removeItem('kp_poll_live');
+      localStorage.removeItem('kp_poll_sid');
+
+      const response = await fetch(API_BASE, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
         body: JSON.stringify({
-          name: "Klassrumsytan_Poll_V9",
-          data: { question, options, active: true, updatedAt: Date.now() }
+          name: `KP_POLL_${Date.now()}`,
+          data: { question, options, updatedAt: Date.now() }
         })
       });
+      
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const data = await response.json();
       setSessionId(data.id);
       setIsLive(true);
       localStorage.setItem('kp_poll_live', 'true');
       localStorage.setItem('kp_poll_sid', data.id);
-      
       startPolling(data.id);
-    } catch (err) {
-      alert("Kunde inte ansluta till servern.");
+    } catch (err: any) {
+      alert(`Kunde inte starta live: ${err.message}`);
     } finally {
       setIsSyncing(false);
     }
@@ -130,247 +151,194 @@ const PollingTool: React.FC = () => {
 
   const startPolling = (id: string) => {
     if (pollInterval.current) clearInterval(pollInterval.current);
-    pollInterval.current = window.setInterval(() => fetchResults(id), 3000);
+    pollInterval.current = window.setInterval(async () => {
+      try {
+        const res = await fetch(`${API_BASE}/${id}`);
+        if (!res.ok) return;
+        const serverData = await res.json();
+        if (serverData.data?.updatedAt > lastUpdateRef.current) {
+          setOptions(current => current.map(local => {
+            const remote = serverData.data.options.find((r: any) => r.id === local.id);
+            return remote ? { ...local, votes: remote.votes } : local;
+          }));
+          lastUpdateRef.current = serverData.data.updatedAt;
+        }
+      } catch (e) {}
+    }, 3000);
   };
 
-  const fetchResults = async (id: string) => {
-    try {
-      const response = await fetch(`https://api.restful-api.dev/objects/${id}`);
-      if (!response.ok) return;
-      const serverData = await response.json();
-      
-      if (serverData.data && serverData.data.options) {
-        const serverOpts = serverData.data.options as PollOption[];
-        
-        // Jämför rösterna. Uppdatera bara om rösterna ökat för att undvika överlagring av nollställda värden
-        setOptions(current => {
-          let hasChanges = false;
-          const merged = current.map(localOpt => {
-            const sOpt = serverOpts.find(s => s.id === localOpt.id);
-            if (sOpt && sOpt.votes > localOpt.votes) {
-              hasChanges = true;
-              return { ...localOpt, votes: sOpt.votes };
-            }
-            return localOpt;
-          });
-          return hasChanges ? merged : current;
-        });
-      }
-    } catch (err) {
-      console.warn("Polling error");
-    }
-  };
-
-  const syncOptionsToServer = async (newOpts: PollOption[], newQuestion?: string) => {
+  const syncToServer = async (newOpts: PollOption[]) => {
     if (!sessionId) return;
+    const now = Date.now();
+    lastUpdateRef.current = now;
     try {
-      await fetch(`https://api.restful-api.dev/objects/${sessionId}`, {
+      await fetch(`${API_BASE}/${sessionId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name: "Klassrumsytan_Poll_V9",
-          data: { 
-            question: newQuestion || question, 
-            options: newOpts, 
-            active: true,
-            updatedAt: Date.now()
-          }
+          name: "KP_POLL_ACTIVE",
+          data: { question, options: newOpts, updatedAt: now }
         })
       });
-    } catch (err) {
-      console.error("Sync error");
-    }
+    } catch (e) {}
   };
 
   useEffect(() => {
-    if (isLive && sessionId) {
-      startPolling(sessionId);
-    }
+    if (isLive && sessionId) startPolling(sessionId);
     return () => { if (pollInterval.current) clearInterval(pollInterval.current); };
   }, [isLive, sessionId]);
 
-  const shareLink = `${window.location.origin}${window.location.pathname}?join=${sessionId}`;
+  const shareLink = sessionId ? `${window.location.origin}${window.location.pathname}?join=${sessionId}` : '';
+
+  // Dynamisk grid-layout beroende på antal alternativ
+  const gridCols = options.length <= 2 ? 'grid-cols-2' : options.length <= 4 ? 'grid-cols-2 md:grid-cols-4' : 'grid-cols-3';
 
   return (
-    <div className="flex flex-col h-full gap-6 animate-in fade-in duration-500 overflow-y-auto custom-scrollbar pr-2 pb-10">
-      
-      <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 pb-6 shrink-0">
-        <div>
-          <h2 className="text-2xl font-black text-slate-800 flex items-center gap-3">
-            <span className="bg-indigo-100 p-2 rounded-xl text-xl">📊</span> 
-            Omröstning
-          </h2>
-          <p className="text-slate-500 text-xs font-medium mt-1">Stäm av läget i klassrummet i realtid.</p>
-        </div>
-
-        <div className="flex flex-wrap gap-2">
+    <div className="flex flex-col h-full gap-4 overflow-y-auto custom-scrollbar pr-2 pb-10">
+      <header className="flex flex-col md:flex-row items-center justify-between gap-4 border-b pb-4 shrink-0">
+        <h2 className="text-xl font-black text-slate-800 flex items-center gap-2">📊 Omröstning</h2>
+        <div className="flex flex-wrap justify-center gap-2">
           {!isLive ? (
-            <button
-              onClick={startLiveSession}
-              disabled={isSyncing}
-              className="bg-indigo-600 text-white px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100 flex items-center gap-2"
-            >
-              {isSyncing ? 'Ansluter...' : '🚀 Sänd Live'}
+            <button onClick={startLiveSession} disabled={isSyncing} className="bg-indigo-600 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase hover:bg-indigo-700 disabled:opacity-50 transition-all shadow-lg">
+              {isSyncing ? '⏳ Startar...' : '🚀 Sänd Live'}
             </button>
           ) : (
-            <button
-              onClick={stopLiveSession}
-              className="bg-red-50 text-red-500 border border-red-100 px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-red-100 transition-all flex items-center gap-2"
-            >
-              🔴 Avsluta Live
-            </button>
+            <button onClick={stopLiveSession} className="bg-red-50 text-red-500 border border-red-100 px-4 py-2 rounded-xl text-[10px] font-black uppercase hover:bg-red-100">🔴 Stoppa</button>
           )}
-          <button
-            onClick={() => setIsEditing(!isEditing)}
-            className="bg-white border border-slate-200 text-slate-500 px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest hover:border-indigo-300 transition-all"
-          >
-            {isEditing ? 'Spara' : '⚙️ Anpassa'}
+          <button onClick={() => {
+            if (isEditing && isLive && sessionId) syncToServer(options);
+            setIsEditing(!isEditing);
+          }} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase transition-all ${isEditing ? 'bg-emerald-600 text-white' : 'bg-white border border-slate-200 text-slate-500'}`}>
+            {isEditing ? 'Klar ✅' : '⚙️ Redigera'}
           </button>
-          <button
-            onClick={resetVotes}
-            className="bg-slate-50 text-slate-400 px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-slate-100 transition-all"
-          >
-            Nollställ
-          </button>
+          <button onClick={resetVotes} className="bg-slate-50 text-slate-400 px-4 py-2 rounded-xl text-[10px] font-black uppercase hover:text-red-500 transition-colors">Nollställ</button>
         </div>
       </header>
 
       {isLive && sessionId && (
-        <div className="bg-emerald-50 border border-emerald-100 p-6 rounded-[2.5rem] flex flex-col md:flex-row items-center gap-8 animate-in slide-in-from-top-4">
-          <div className="shrink-0 bg-white p-4 rounded-3xl shadow-sm">
-            <img 
-              src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(shareLink)}`} 
-              alt="QR Code" 
-              className="w-24 h-24 md:w-32 md:h-32"
-            />
+        <div className="bg-emerald-50 border border-emerald-100 p-4 rounded-3xl flex flex-col md:flex-row items-center gap-6 shrink-0">
+          <div className="shrink-0 bg-white p-2 rounded-2xl shadow-sm border border-emerald-100">
+            <img src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(shareLink)}`} alt="QR" className="w-24 h-24" />
           </div>
           <div className="flex-1 text-center md:text-left">
-            <h4 className="text-emerald-800 font-black text-lg mb-1">Live-omröstning aktiv!</h4>
-            <p className="text-emerald-600 text-sm font-medium mb-4">Be eleverna skanna QR-koden eller gå till länken nedan:</p>
-            <div className="flex items-center gap-2 bg-white/50 p-2 rounded-xl border border-emerald-100">
-               <code className="text-[10px] font-bold text-emerald-700 truncate flex-1">{shareLink}</code>
-               <button 
-                 onClick={() => { navigator.clipboard.writeText(shareLink); alert("Länk kopierad!"); }}
-                 className="bg-emerald-600 text-white text-[10px] font-bold px-3 py-1.5 rounded-lg hover:bg-emerald-700 transition-all"
-               >Kopiera</button>
+            <h4 className="text-emerald-800 font-black text-xs uppercase tracking-widest mb-1">Live nu!</h4>
+            <div className="flex items-center gap-2 bg-white/80 p-2 rounded-xl border border-emerald-100 shadow-inner max-w-xs mx-auto md:mx-0">
+               <code className="text-[9px] font-bold text-emerald-700 truncate flex-1">{shareLink}</code>
+               <button onClick={() => { navigator.clipboard.writeText(shareLink); alert("Kopierat!"); }} className="bg-emerald-600 text-white text-[9px] font-bold px-3 py-1.5 rounded-lg">Kopiera</button>
             </div>
           </div>
         </div>
       )}
 
       {isEditing ? (
-        <div className="space-y-6 animate-in fade-in duration-300">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            {TEMPLATES.map(t => (
-              <button
-                key={t.id}
-                onClick={() => applyTemplate(t.id)}
-                className="p-4 bg-slate-50 border-2 border-slate-100 rounded-2xl text-left hover:border-indigo-200 transition-all group"
-              >
-                <div className="text-xs font-black text-slate-400 uppercase tracking-widest mb-1 group-hover:text-indigo-400">Mall</div>
-                <div className="font-bold text-slate-700">{t.title}</div>
-              </button>
-            ))}
+        <div className="space-y-6 py-2 animate-in fade-in duration-300">
+          <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Fråga</label>
+            <input 
+              type="text" 
+              value={question} 
+              onChange={(e) => setQuestion(e.target.value)} 
+              className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-lg font-bold outline-none focus:border-indigo-500" 
+              placeholder="Skriv din fråga här..."
+            />
           </div>
-          
-          <div className="space-y-4">
-            <div>
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-2 block">Fråga</label>
-              <input 
-                type="text" 
-                value={question} 
-                onChange={(e) => setQuestion(e.target.value)}
-                className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl px-6 py-4 text-xl font-bold text-slate-800 outline-none focus:border-indigo-500 transition-all"
-              />
+
+          <div className="space-y-2">
+            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Mallar</label>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+              {TEMPLATES.map(t => (
+                <button 
+                  key={t.id} 
+                  onClick={() => { 
+                    setQuestion(t.question); 
+                    setOptions(JSON.parse(JSON.stringify(t.options)));
+                  }} 
+                  className="p-3 bg-white border border-slate-100 rounded-xl text-[10px] font-black uppercase hover:border-indigo-400 hover:text-indigo-600 transition-all shadow-sm"
+                >
+                  {t.title}
+                </button>
+              ))}
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          </div>
+
+          <div className="space-y-3">
+            <div className="flex justify-between items-center px-1">
+              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest">Alternativ</label>
+              <button onClick={addOption} disabled={options.length >= 6} className="text-indigo-600 font-bold text-xs hover:underline disabled:opacity-30">
+                + Lägg till svar
+              </button>
+            </div>
+            <div className="space-y-2">
               {options.map((opt, idx) => (
-                <div key={opt.id} className="flex items-center gap-3 bg-white border border-slate-100 p-4 rounded-2xl">
-                  <span className="text-2xl">{opt.icon}</span>
+                <div key={opt.id} className="flex items-center gap-2 p-3 bg-white border border-slate-100 rounded-2xl group shadow-sm">
                   <input 
                     type="text" 
-                    value={opt.label}
-                    onChange={(e) => {
-                      const next = [...options];
-                      next[idx].label = e.target.value;
-                      setOptions(next);
-                    }}
-                    className="flex-1 bg-transparent border-b border-slate-100 outline-none text-sm font-bold text-slate-600"
+                    value={opt.icon} 
+                    onChange={(e) => updateOption(opt.id, 'icon', e.target.value)}
+                    className="w-10 h-10 text-center bg-slate-50 border border-slate-100 rounded-xl text-lg font-bold outline-none focus:border-indigo-400"
+                    placeholder="🎨"
                   />
+                  <input 
+                    type="text" 
+                    value={opt.label} 
+                    onChange={(e) => updateOption(opt.id, 'label', e.target.value)}
+                    className="flex-1 bg-transparent border-b border-slate-100 focus:border-indigo-400 outline-none font-bold text-slate-700 py-1"
+                    placeholder="Svarstext..."
+                  />
+                  <button onClick={() => removeOption(opt.id)} className="p-2 text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all">✕</button>
                 </div>
               ))}
             </div>
           </div>
         </div>
       ) : (
-        <div className="space-y-10 py-6">
-          <h3 className="text-4xl md:text-5xl font-black text-slate-800 text-center leading-tight max-w-3xl mx-auto">
-            {question}
-          </h3>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto w-full">
+        <div className="space-y-8 py-4 flex-1 flex flex-col justify-center">
+          <h3 className="text-3xl md:text-5xl font-black text-slate-800 text-center leading-tight tracking-tight px-4">{question}</h3>
+          
+          <div className={`grid ${gridCols} gap-3 md:gap-4 max-w-4xl mx-auto w-full px-2`}>
             {options.map((opt) => (
-              <button
-                key={opt.id}
-                onClick={() => handleVote(opt.id)}
-                className="group relative flex flex-col items-center justify-center p-10 bg-white rounded-[3.5rem] border border-slate-200 hover:border-indigo-400 hover:shadow-2xl hover:-translate-y-1 transition-all"
+              <button 
+                key={opt.id} 
+                onClick={() => handleVote(opt.id)} 
+                className="flex flex-col items-center justify-center p-6 md:p-10 bg-white rounded-3xl border border-slate-100 hover:border-indigo-400 hover:shadow-xl transition-all active:scale-95 group relative overflow-hidden"
               >
-                <div className="text-7xl mb-6 group-hover:scale-110 transition-transform duration-300">
-                  {opt.icon}
-                </div>
-                <span className="text-xl font-black text-slate-700">{opt.label}</span>
-                <div className="absolute top-6 right-6 w-10 h-10 bg-slate-50 rounded-full flex items-center justify-center text-[10px] font-black text-slate-300">
-                  +1
-                </div>
+                <div className="absolute inset-0 bg-slate-50 opacity-0 group-hover:opacity-100 transition-opacity -z-10"></div>
+                <div className="text-5xl md:text-7xl mb-4 group-hover:scale-110 transition-transform">{opt.icon}</div>
+                <span className="text-sm md:text-xl font-black text-slate-700">{opt.label}</span>
               </button>
             ))}
           </div>
 
-          <div className="max-w-4xl mx-auto w-full bg-slate-50/50 p-10 rounded-[4rem] border border-slate-100">
-            <div className="flex items-center justify-between mb-10">
-              <div>
-                <h4 className="text-slate-400 uppercase tracking-[0.2em] text-[10px] font-black mb-1">Statistik</h4>
-                <div className="text-2xl font-black text-slate-800">{totalVotes} <span className="text-slate-400 text-lg font-bold">röster</span></div>
-              </div>
-              <button
-                onClick={() => setShowResults(!showResults)}
-                className={`px-8 py-3 rounded-2xl text-xs font-black uppercase tracking-widest transition-all ${
-                  showResults 
-                    ? 'bg-white text-slate-500 border border-slate-200 shadow-sm' 
-                    : 'bg-indigo-600 text-white shadow-xl shadow-indigo-100 hover:scale-105'
-                }`}
+          <div className="max-w-4xl mx-auto w-full bg-slate-50/50 p-6 md:p-8 rounded-[2.5rem] border border-slate-100 mt-auto">
+            <div className="flex items-center justify-between mb-6">
+              <div className="text-xl md:text-2xl font-black text-slate-800">{totalVotes} <span className="text-slate-400 text-xs font-bold uppercase tracking-widest ml-2">röster</span></div>
+              <button 
+                onClick={() => setShowResults(!showResults)} 
+                className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase transition-all shadow-sm ${showResults ? 'bg-white text-slate-500 border border-slate-100' : 'bg-indigo-600 text-white'}`}
               >
                 {showResults ? 'Dölj Resultat' : 'Visa Resultat'}
               </button>
             </div>
-
-            {showResults ? (
-              <div className="space-y-8 animate-in fade-in zoom-in-95">
+            
+            {showResults && (
+              <div className="space-y-5 animate-in slide-in-from-bottom-2 duration-300">
                 {options.map((opt) => {
                   const percentage = totalVotes > 0 ? (opt.votes / totalVotes) * 100 : 0;
                   return (
-                    <div key={opt.id} className="space-y-3">
-                      <div className="flex items-center justify-between px-2">
-                        <span className="flex items-center gap-3">
-                           <span className="text-2xl">{opt.icon}</span>
-                           <span className="font-black text-slate-700">{opt.label}</span>
-                        </span>
-                        <span className="font-black text-indigo-600">{Math.round(percentage)}%</span>
+                    <div key={opt.id} className="space-y-2">
+                      <div className="flex justify-between font-black text-[10px] md:text-xs px-2 uppercase tracking-wider">
+                        <span className="text-slate-700">{opt.icon} {opt.label}</span>
+                        <span className="text-indigo-600">{Math.round(percentage)}% ({opt.votes})</span>
                       </div>
-                      <div className="h-6 w-full bg-white rounded-full overflow-hidden p-1 shadow-inner border border-slate-100">
+                      <div className="h-4 bg-white rounded-full overflow-hidden p-0.5 border border-slate-50 shadow-inner">
                         <div 
-                          className={`h-full ${opt.color} rounded-full transition-all duration-1000 ease-out`}
-                          style={{ width: `${percentage}%` }}
+                          className={`h-full ${opt.color} rounded-full transition-all duration-1000 ease-out`} 
+                          style={{ width: `${percentage}%` }} 
                         />
                       </div>
                     </div>
                   );
                 })}
-              </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center py-10 opacity-30 grayscale">
-                 <div className="text-7xl mb-4">🕵️‍♂️</div>
-                 <p className="font-black text-lg uppercase tracking-widest">Resultat dolda</p>
               </div>
             )}
           </div>

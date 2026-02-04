@@ -6,6 +6,7 @@ interface SidebarProps {
   activeTool: ToolType | null;
   onSelectTool: (tool: ToolType) => void;
   onClose?: () => void;
+  openWidgets?: ToolType[]; // Ny prop för att visa vilka som är öppna
 }
 
 interface ToolInfo {
@@ -16,7 +17,7 @@ interface ToolInfo {
   color: string;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ activeTool, onSelectTool, onClose }) => {
+const Sidebar: React.FC<SidebarProps> = ({ activeTool, onSelectTool, onClose, openWidgets = [] }) => {
   const [hoveredTool, setHoveredTool] = useState<ToolInfo | null>(null);
 
   const tools: ToolInfo[] = [
@@ -36,6 +37,8 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTool, onSelectTool, onClose }) 
 
   const renderButton = (item: ToolInfo | { type: ToolType, label: string, icon: string, desc?: string, color?: string }) => {
     const isMain = 'desc' in item;
+    const isOpen = openWidgets.includes(item.type);
+
     return (
       <button
         key={item.type}
@@ -49,7 +52,10 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTool, onSelectTool, onClose }) 
         }`}
       >
         <span className="text-xl group-hover:scale-125 transition-transform">{item.icon}</span>
-        <span className="hidden md:block text-sm font-medium">{item.label}</span>
+        <span className="hidden md:block text-sm font-medium flex-1">{item.label}</span>
+        {isOpen && (
+          <div className="w-2 h-2 bg-indigo-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(99,102,241,0.5)]" />
+        )}
       </button>
     );
   };
@@ -78,7 +84,6 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTool, onSelectTool, onClose }) 
       <nav className="flex-1 p-3 flex flex-col gap-1 overflow-y-auto relative custom-scrollbar">
         {tools.map(renderButton)}
 
-        {/* Floating Info Tooltip */}
         {hoveredTool && (
           <div className="hidden md:block absolute left-[100%] ml-2 top-0 mt-2 w-64 p-5 bg-white rounded-3xl shadow-2xl border border-slate-100 animate-in fade-in slide-in-from-left-4 duration-200 z-[10000] pointer-events-none">
             <div className={`w-12 h-12 ${hoveredTool.color} rounded-2xl flex items-center justify-center text-xl mb-4`}>
@@ -91,8 +96,29 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTool, onSelectTool, onClose }) 
       </nav>
       
       <div className="p-3 border-t border-slate-100 space-y-1 bg-slate-50/50">
-        {renderButton({ type: ToolType.DASHBOARD, label: 'Rensa allt', icon: '🧹' })}
-        {renderButton({ type: ToolType.BACKGROUND, label: 'Ändra bakgrund', icon: '🖼️' })}
+        <div className="grid grid-cols-2 gap-1 mb-1">
+          <button
+            onClick={() => onSelectTool(ToolType.ARRANGE)}
+            className="flex flex-col items-center justify-center py-3 bg-white border border-slate-200 rounded-xl text-slate-500 hover:text-indigo-600 hover:border-indigo-200 transition-all group"
+          >
+            <span className="text-lg group-hover:scale-110 transition-transform">🧩</span>
+            <span className="text-[9px] font-black uppercase mt-1 tracking-tighter">Ordna Allt</span>
+          </button>
+          <button
+            onClick={() => onSelectTool(ToolType.DASHBOARD)}
+            className="flex flex-col items-center justify-center py-3 bg-white border border-slate-200 rounded-xl text-slate-500 hover:text-red-500 hover:border-red-200 transition-all group"
+          >
+            <span className="text-lg group-hover:scale-110 transition-transform">🧹</span>
+            <span className="text-[9px] font-black uppercase mt-1 tracking-tighter">Rensa Allt</span>
+          </button>
+        </div>
+        <button
+          onClick={() => onSelectTool(ToolType.BACKGROUND)}
+          className="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-500 hover:bg-indigo-50 hover:text-indigo-700 transition-all w-full text-left"
+        >
+          <span className="text-xl">🖼️</span>
+          <span className="hidden md:block text-sm font-medium">Ändra bakgrund</span>
+        </button>
       </div>
     </aside>
   );

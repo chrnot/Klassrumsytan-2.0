@@ -23,7 +23,8 @@ export enum ToolType {
   BACKGROUND = 'BACKGROUND',
   POLLING = 'POLLING',
   MATTEYTAN = 'MATTEYTAN',
-  IMAGE_ANNOTATOR = 'IMAGE_ANNOTATOR'
+  IMAGE_ANNOTATOR = 'IMAGE_ANNOTATOR',
+  ARRANGE = 'ARRANGE' // Ny typ för att ordna fönster
 }
 
 export interface WidgetInstance {
@@ -37,10 +38,6 @@ export interface WidgetInstance {
   isOpen: boolean;
 }
 
-export interface AppSettings {
-  background: string;
-}
-
 export interface Message {
   role: 'user' | 'assistant';
   content: string;
@@ -52,5 +49,4 @@ export interface ChecklistItem {
   completed: boolean;
   isSpotlight: boolean;
   timerSeconds?: number;
-  hasLink?: string;
 }

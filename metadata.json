@@ -1,7 +1,9 @@
 {
-  "name": "Klassrumsytan v2.0",
-  "description": "En digital version av den fysiska tavlan - ett fokusrum för dig som vill skapa lugn och arbetsro",
   "requestFramePermissions": [
-    "microphone"
-  ]
+    "camera",
+    "microphone",
+    "geolocation"
+  ],
+  "name": "",
+  "description": ""
 }
