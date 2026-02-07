@@ -2,11 +2,13 @@
 import React, { useState, useRef, useEffect } from 'react';
 
 type Tool = 'pen' | 'text';
+type PaperPattern = 'none' | 'grid' | 'lines' | 'dots';
 
 const Whiteboard: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [activeTool, setActiveTool] = useState<Tool>('pen');
+  const [paperPattern, setPaperPattern] = useState<PaperPattern>('none');
   const [penColor, setPenColor] = useState('#4f46e5');
   const [penWidth, setPenWidth] = useState(12); 
   
@@ -113,9 +115,19 @@ const Whiteboard: React.FC = () => {
     setTextInput(null);
   };
 
+  const getPatternClass = () => {
+    switch (paperPattern) {
+      case 'grid': return 'bg-pattern-grid';
+      case 'lines': return 'bg-pattern-lines';
+      case 'dots': return 'bg-pattern-dots';
+      default: return 'bg-white';
+    }
+  };
+
   return (
     <div className="h-full flex flex-col gap-4 animate-in fade-in duration-500 relative">
       <div className="flex flex-wrap items-center gap-3 p-3 bg-slate-50 rounded-2xl border border-slate-100 shrink-0 shadow-sm">
+        {/* VERKTYGSVÄLJARE */}
         <div className="flex bg-white p-1 rounded-xl border border-slate-200 shadow-sm">
           <button 
             onClick={() => { setActiveTool('pen'); setTextInput(null); }}
@@ -133,6 +145,41 @@ const Whiteboard: React.FC = () => {
 
         <div className="h-8 w-[1px] bg-slate-200 mx-1" />
 
+        {/* PAPPERSTYP */}
+        <div className="flex bg-white p-1 rounded-xl border border-slate-200 shadow-sm">
+          <button 
+            onClick={() => setPaperPattern('none')}
+            title="Blankt"
+            className={`w-9 h-9 rounded-lg flex items-center justify-center transition-all ${paperPattern === 'none' ? 'bg-slate-800 text-white' : 'text-slate-400 hover:bg-slate-50'}`}
+          >
+            ⬜
+          </button>
+          <button 
+            onClick={() => setPaperPattern('grid')}
+            title="Matterutor"
+            className={`w-9 h-9 rounded-lg flex items-center justify-center transition-all ${paperPattern === 'grid' ? 'bg-slate-800 text-white' : 'text-slate-400 hover:bg-slate-50'}`}
+          >
+            🟦
+          </button>
+          <button 
+            onClick={() => setPaperPattern('lines')}
+            title="Linjerat"
+            className={`w-9 h-9 rounded-lg flex items-center justify-center transition-all ${paperPattern === 'lines' ? 'bg-slate-800 text-white' : 'text-slate-400 hover:bg-slate-50'}`}
+          >
+            🗒️
+          </button>
+          <button 
+            onClick={() => setPaperPattern('dots')}
+            title="Prickat"
+            className={`w-9 h-9 rounded-lg flex items-center justify-center transition-all ${paperPattern === 'dots' ? 'bg-slate-800 text-white' : 'text-slate-400 hover:bg-slate-50'}`}
+          >
+            ⁙
+          </button>
+        </div>
+
+        <div className="h-8 w-[1px] bg-slate-200 mx-1" />
+
+        {/* FÄRGVÄLJARE */}
         <div className="flex gap-2">
           {['#4f46e5', '#ef4444', '#10b981', '#f59e0b', '#000000'].map(c => (
             <button 
@@ -142,19 +189,6 @@ const Whiteboard: React.FC = () => {
               style={{ background: c }} 
             />
           ))}
-        </div>
-
-        <div className="h-8 w-[1px] bg-slate-200 mx-1" />
-
-        <div className="flex items-center gap-3">
-          <input 
-            type="range" min="4" max="80" value={penWidth} 
-            onChange={(e) => setPenWidth(parseInt(e.target.value))} 
-            className="w-24 accent-indigo-600 cursor-pointer" 
-          />
-          <span className="text-[10px] font-black text-slate-400 w-12 uppercase tracking-tighter">
-            Stl: {penWidth}
-          </span>
         </div>
 
         <button 
@@ -168,7 +202,7 @@ const Whiteboard: React.FC = () => {
         </button>
       </div>
 
-      <div className="flex-1 bg-white rounded-[2.5rem] relative overflow-hidden border-2 border-slate-50 shadow-inner group">
+      <div className={`flex-1 rounded-[2.5rem] relative overflow-hidden border-2 border-slate-50 shadow-inner group transition-all duration-300 ${getPatternClass()}`}>
         <canvas
           ref={canvasRef}
           width={2000}
@@ -180,7 +214,7 @@ const Whiteboard: React.FC = () => {
           onTouchStart={startDrawing}
           onTouchMove={draw}
           onTouchEnd={stopDrawing}
-          className={`w-full h-full block touch-none ${activeTool === 'text' ? 'cursor-text' : 'cursor-crosshair'}`}
+          className={`w-full h-full block touch-none bg-transparent ${activeTool === 'text' ? 'cursor-text' : 'cursor-crosshair'}`}
         />
 
         {textInput && (
@@ -219,9 +253,16 @@ const Whiteboard: React.FC = () => {
       </div>
 
       <div className="flex items-center justify-between px-3 py-1">
-        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
-          {activeTool === 'text' ? 'Klicka på tavlan för att skriva' : 'Rita fritt med vald storlek'}
-        </p>
+        <div className="flex items-center gap-3">
+          <input 
+            type="range" min="4" max="80" value={penWidth} 
+            onChange={(e) => setPenWidth(parseInt(e.target.value))} 
+            className="w-24 accent-indigo-600 cursor-pointer" 
+          />
+          <span className="text-[10px] font-black text-slate-400 w-12 uppercase tracking-tighter">
+            Bredd: {penWidth}
+          </span>
+        </div>
         <div className="flex items-center gap-2 bg-slate-50 px-3 py-1 rounded-full border border-slate-100">
           <div className="w-2 h-2 rounded-full" style={{ background: penColor }}></div>
           <span className="text-[9px] font-black text-slate-500 uppercase tracking-tighter">Aktiv Färg</span>

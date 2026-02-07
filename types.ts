@@ -24,7 +24,7 @@ export enum ToolType {
   POLLING = 'POLLING',
   MATTEYTAN = 'MATTEYTAN',
   IMAGE_ANNOTATOR = 'IMAGE_ANNOTATOR',
-  ARRANGE = 'ARRANGE' // Ny typ för att ordna fönster
+  ARRANGE = 'ARRANGE'
 }
 
 export interface WidgetInstance {
@@ -36,6 +36,13 @@ export interface WidgetInstance {
   height?: number;
   zIndex: number;
   isOpen: boolean;
+}
+
+export interface PageData {
+  id: string;
+  name: string;
+  background: string;
+  widgets: WidgetInstance[];
 }
 
 export interface Message {

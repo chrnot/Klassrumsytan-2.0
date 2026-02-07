@@ -32,7 +32,6 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTool, onSelectTool, onClose, op
     { type: ToolType.POLLING, label: 'Omröstning', icon: '📊', desc: 'Stäm av läget med snabba frågor.', color: 'bg-amber-100 text-amber-600' },
     { type: ToolType.NOISE_METER, label: 'Ljudmätare', icon: '🔊', desc: 'Håll ljudnivån på en bra nivå.', color: 'bg-cyan-100 text-cyan-600' },
     { type: ToolType.ASSISTANT, label: 'AI Assistent', icon: '✨', desc: 'Lektionsidéer direkt från Gemini.', color: 'bg-indigo-100 text-indigo-600' },
-    { type: ToolType.MATTEYTAN, label: 'Matteytan', icon: '🔢', desc: 'Matematikövningar för alla årskurser.', color: 'bg-teal-100 text-teal-600' },
   ];
 
   const renderButton = (item: ToolInfo | { type: ToolType, label: string, icon: string, desc?: string, color?: string }) => {
@@ -95,30 +94,21 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTool, onSelectTool, onClose, op
         )}
       </nav>
       
-      <div className="p-3 border-t border-slate-100 space-y-1 bg-slate-50/50">
-        <div className="grid grid-cols-2 gap-1 mb-1">
-          <button
-            onClick={() => onSelectTool(ToolType.ARRANGE)}
-            className="flex flex-col items-center justify-center py-3 bg-white border border-slate-200 rounded-xl text-slate-500 hover:text-indigo-600 hover:border-indigo-200 transition-all group"
-          >
-            <span className="text-lg group-hover:scale-110 transition-transform">🧩</span>
-            <span className="text-[9px] font-black uppercase mt-1 tracking-tighter">Ordna Allt</span>
-          </button>
-          <button
-            onClick={() => onSelectTool(ToolType.DASHBOARD)}
-            className="flex flex-col items-center justify-center py-3 bg-white border border-slate-200 rounded-xl text-slate-500 hover:text-red-500 hover:border-red-200 transition-all group"
-          >
-            <span className="text-lg group-hover:scale-110 transition-transform">🧹</span>
-            <span className="text-[9px] font-black uppercase mt-1 tracking-tighter">Rensa Allt</span>
-          </button>
-        </div>
+      <div className="p-4 border-t border-slate-100 bg-slate-50/50 flex flex-col gap-2">
         <button
-          onClick={() => onSelectTool(ToolType.BACKGROUND)}
-          className="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-500 hover:bg-indigo-50 hover:text-indigo-700 transition-all w-full text-left"
+          onClick={() => onSelectTool(ToolType.MATTEYTAN)}
+          className="flex items-center gap-3 px-4 py-3 rounded-xl bg-teal-50 text-teal-700 hover:bg-teal-100 transition-all w-full text-left group"
         >
-          <span className="text-xl">🖼️</span>
-          <span className="hidden md:block text-sm font-medium">Ändra bakgrund</span>
+          <span className="text-xl group-hover:scale-125 transition-transform">🔢</span>
+          <div className="flex flex-col">
+            <span className="hidden md:block text-sm font-bold">Matteytan</span>
+            <span className="hidden md:block text-[9px] font-black uppercase text-teal-600/60 tracking-tighter">VISUALISERA MATTE</span>
+          </div>
         </button>
+        
+        <p className="text-[9px] font-black uppercase text-slate-400 tracking-widest text-center mt-1 opacity-50">
+          Välj verktyg för att börja
+        </p>
       </div>
     </aside>
   );
