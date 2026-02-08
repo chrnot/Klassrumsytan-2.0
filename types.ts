@@ -24,7 +24,8 @@ export enum ToolType {
   POLLING = 'POLLING',
   MATTEYTAN = 'MATTEYTAN',
   IMAGE_ANNOTATOR = 'IMAGE_ANNOTATOR',
-  ARRANGE = 'ARRANGE'
+  ARRANGE = 'ARRANGE',
+  VIDEO_PLAYER = 'VIDEO_PLAYER'
 }
 
 export interface WidgetInstance {

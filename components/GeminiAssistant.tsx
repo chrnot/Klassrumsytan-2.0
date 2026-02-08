@@ -40,7 +40,7 @@ async function decodeAudioData(data: Uint8Array, ctx: AudioContext, sampleRate: 
 
 const GeminiAssistant: React.FC<GeminiAssistantProps> = () => {
   const [messages, setMessages] = useState<Message[]>([
-    { role: 'assistant', content: 'Hej! Jag är din digitala lärarassistent. Klicka på "Prata Live" för att starta en röstkonversation eller skriv din fråga här.' }
+    { role: 'assistant', content: 'Hej! Jag är din digitala assistent. Klicka på "Prata Live" för att starta en röstkonversation eller skriv din fråga här för att få förslag på en snabb aktivitet.' }
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -140,7 +140,7 @@ const GeminiAssistant: React.FC<GeminiAssistantProps> = () => {
         config: {
           responseModalities: [Modality.AUDIO],
           speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Puck' } } },
-          systemInstruction: 'Du är en hjälpsam lärarassistent i ett svenskt klassrum. Svara kort och vänligt.'
+          systemInstruction: 'Du är en hjälpsam lärarassistent i ett svenskt klassrum. Din huvuduppgift är att föreslå snabba, engagerande aktiviteter för eleverna. Svara kort och vänligt.'
         }
       });
       
@@ -167,7 +167,7 @@ const GeminiAssistant: React.FC<GeminiAssistantProps> = () => {
         model: 'gemini-3-flash-preview',
         contents: userMessage,
         config: {
-          systemInstruction: "Du är en expertpedagog och lärarassistent. Svara kortfattat på svenska.",
+          systemInstruction: "Du är en expertpedagog och lärarassistent. Din huvuduppgift är att föreslå snabba, engagerande aktiviteter för eleverna (ca 5 minuter). Svara kortfattat på svenska.",
           temperature: 0.7,
         },
       });
@@ -186,10 +186,10 @@ const GeminiAssistant: React.FC<GeminiAssistantProps> = () => {
       <header className="bg-indigo-600 p-5 text-white flex justify-between items-center shrink-0">
         <div>
           <h2 className="text-lg font-bold flex items-center gap-2">
-            <span className="text-xl">✨</span> Assistent
+            <span className="text-xl">✨</span> 5-min Aktivitet
           </h2>
           <p className="text-indigo-100 text-[10px] opacity-80 uppercase tracking-widest font-black">
-            {isLiveActive ? 'Live Röstläge' : 'Gemini AI'}
+            {isLiveActive ? 'Live Röstläge' : 'AI-genererad inspiration'}
           </p>
         </div>
         
@@ -269,7 +269,7 @@ const GeminiAssistant: React.FC<GeminiAssistantProps> = () => {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             disabled={isLiveActive}
-            placeholder={isLiveActive ? "Använd rösten för att prata..." : "Skriv din fråga..."}
+            placeholder={isLiveActive ? "Använd rösten för att prata..." : "Be om en aktivitet..."}
             className="flex-1 px-5 py-3 rounded-2xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:bg-slate-100 transition-all"
           />
           <button

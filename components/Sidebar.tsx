@@ -27,11 +27,12 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTool, onSelectTool, onClose, op
     { type: ToolType.GROUPING, label: 'Gruppering', icon: '👥', desc: 'Skapa slumpmässiga studiegrupper.', color: 'bg-orange-100 text-orange-600' },
     { type: ToolType.TIMER, label: 'Timer', icon: '⏱️', desc: 'Sätt fokus med en visuell nedräkning.', color: 'bg-indigo-100 text-indigo-600' },
     { type: ToolType.WHITEBOARD, label: 'Whiteboard', icon: '🎨', desc: 'Rita och förklara visuellt på tavlan.', color: 'bg-blue-100 text-blue-600' },
+    { type: ToolType.VIDEO_PLAYER, label: 'Videospelare', icon: '🎬', desc: 'Spela upp YouTube-klipp eller videofiler.', color: 'bg-slate-100 text-slate-600' },
     { type: ToolType.IMAGE_ANNOTATOR, label: 'Bild-rita', icon: '📸', desc: 'Ladda upp en bild och gör anteckningar ovanpå.', color: 'bg-pink-100 text-pink-600' },
     { type: ToolType.QR_CODE, label: 'QR-Kod', icon: '📱', desc: 'Dela länkar snabbt via QR-koder.', color: 'bg-purple-100 text-purple-600' },
     { type: ToolType.POLLING, label: 'Omröstning', icon: '📊', desc: 'Stäm av läget med snabba frågor.', color: 'bg-amber-100 text-amber-600' },
     { type: ToolType.NOISE_METER, label: 'Ljudmätare', icon: '🔊', desc: 'Håll ljudnivån på en bra nivå.', color: 'bg-cyan-100 text-cyan-600' },
-    { type: ToolType.ASSISTANT, label: 'AI Assistent', icon: '✨', desc: 'Lektionsidéer direkt från Gemini.', color: 'bg-indigo-100 text-indigo-600' },
+    { type: ToolType.ASSISTANT, label: '5-min Aktivitet', icon: '✨', desc: 'Få förslag på snabba aktiviteter direkt från AI.', color: 'bg-indigo-100 text-indigo-600' },
   ];
 
   const renderButton = (item: ToolInfo | { type: ToolType, label: string, icon: string, desc?: string, color?: string }) => {
