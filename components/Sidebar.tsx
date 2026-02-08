@@ -25,6 +25,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTool, onSelectTool, onClose, op
     { type: ToolType.TRAFFIC_LIGHT, label: 'Trafikljus', icon: '🚦', desc: 'Kommunicera tydligt med färg.', color: 'bg-red-100 text-red-600' },
     { type: ToolType.RANDOMIZER, label: 'Slumpa Elev', icon: '🎲', desc: 'Välj en elev på ett rättvist sätt.', color: 'bg-rose-100 text-rose-600' },
     { type: ToolType.GROUPING, label: 'Gruppering', icon: '👥', desc: 'Skapa slumpmässiga studiegrupper.', color: 'bg-orange-100 text-orange-600' },
+    { type: ToolType.QUICK_LINKS, label: 'Genvägar', icon: '🔗', desc: 'Snabblänkar till Classroom, YouTube och andra sidor.', color: 'bg-sky-100 text-sky-600' },
     { type: ToolType.TIMER, label: 'Timer', icon: '⏱️', desc: 'Sätt fokus med en visuell nedräkning.', color: 'bg-indigo-100 text-indigo-600' },
     { type: ToolType.WHITEBOARD, label: 'Whiteboard', icon: '🎨', desc: 'Rita och förklara visuellt på tavlan.', color: 'bg-blue-100 text-blue-600' },
     { type: ToolType.VIDEO_PLAYER, label: 'Videospelare', icon: '🎬', desc: 'Spela upp YouTube-klipp eller videofiler.', color: 'bg-slate-100 text-slate-600' },

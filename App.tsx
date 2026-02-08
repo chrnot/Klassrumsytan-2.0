@@ -18,6 +18,7 @@ import ImageAnnotator from './components/ImageAnnotator';
 import StudentPollView from './components/StudentPollView';
 import GeminiAssistant from './components/GeminiAssistant';
 import VideoPlayer from './components/VideoPlayer';
+import QuickLinks from './components/QuickLinks';
 
 const App: React.FC = () => {
   const queryParams = new URLSearchParams(window.location.search);
@@ -76,6 +77,7 @@ const App: React.FC = () => {
       case ToolType.CHECKLIST: return { width: 550, height: 750 };
       case ToolType.GROUPING: return { width: 750, height: 750 };
       case ToolType.VIDEO_PLAYER: return { width: 800, height: 600 };
+      case ToolType.QUICK_LINKS: return { width: 400, height: 500 };
       default: return { width: 700, height: 750 };
     }
   };
@@ -179,6 +181,7 @@ const App: React.FC = () => {
       case ToolType.IMAGE_ANNOTATOR: return <ImageAnnotator />;
       case ToolType.QR_CODE: return <QRCodeWidget />;
       case ToolType.VIDEO_PLAYER: return <VideoPlayer />;
+      case ToolType.QUICK_LINKS: return <QuickLinks />;
       default: return null;
     }
   };
@@ -195,7 +198,8 @@ const App: React.FC = () => {
     [ToolType.WHITEBOARD]: { title: 'Whiteboard', icon: '🎨' },
     [ToolType.IMAGE_ANNOTATOR]: { title: 'Bild-rita', icon: '📸' },
     [ToolType.QR_CODE]: { title: 'QR-Kod', icon: '📱' },
-    [ToolType.VIDEO_PLAYER]: { title: 'Video', icon: '🎬' }
+    [ToolType.VIDEO_PLAYER]: { title: 'Video', icon: '🎬' },
+    [ToolType.QUICK_LINKS]: { title: 'Genvägar', icon: '🔗' }
   };
 
   if (isStudent && pollIdFromUrl) return <StudentPollView pollId={pollIdFromUrl} />;

@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 
 enum TimerMode {
   COUNTDOWN = 'COUNTDOWN',
@@ -9,6 +9,13 @@ enum TimerMode {
 }
 
 type ClockType = 'digital' | 'analog';
+
+const SOUNDS = [
+  { id: 'alarm', label: 'Alarm', icon: '🔔', url: 'https://actions.google.com/sounds/v1/alarms/alarm_clock_ringing_rising.ogg' },
+  { id: 'digital', label: 'Digital', icon: '📟', url: 'https://actions.google.com/sounds/v1/alarms/digital_watch_alarm_long.ogg' },
+  { id: 'bell', label: 'Skolklocka', icon: '🏫', url: 'https://actions.google.com/sounds/v1/alarms/mechanical_clock_ring.ogg' },
+  { id: 'ding', label: 'Plinn', icon: '✨', url: 'https://actions.google.com/sounds/v1/alarms/beep_short.ogg' },
+];
 
 const Timer: React.FC = () => {
   const [mode, setMode] = useState<TimerMode>(TimerMode.COUNTDOWN);
@@ -23,6 +30,10 @@ const Timer: React.FC = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [isEditingMinutes, setIsEditingMinutes] = useState(false);
   const [manualMinutes, setManualMinutes] = useState('');
+  const [selectedSound, setSelectedSound] = useState(SOUNDS[0]);
+
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const alarmStopTimeoutRef = useRef<number | null>(null);
 
   // Clock Update
   useEffect(() => {
@@ -37,12 +48,61 @@ const Timer: React.FC = () => {
       interval = setInterval(() => setSeconds(s => s - 1), 1000);
     } else if (seconds === 0 && isActive) {
       setIsActive(false);
-      const audio = new Audio('https://actions.google.com/sounds/v1/alarms/alarm_clock_ringing_rising.ogg');
-      audio.play().catch(() => {});
-      alert('Tiden är ute! 🔔');
+      playAlarm();
+      setTimeout(() => {
+        alert('Tiden är ute! 🔔');
+      }, 100);
     }
     return () => clearInterval(interval);
   }, [isActive, seconds]);
+
+  // Clean up timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (alarmStopTimeoutRef.current) {
+        window.clearTimeout(alarmStopTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const playAlarm = () => {
+    // Rensa eventuella gamla stopp-timers
+    if (alarmStopTimeoutRef.current) {
+      window.clearTimeout(alarmStopTimeoutRef.current);
+    }
+
+    const audio = audioRef.current;
+    if (audio) {
+      audio.src = selectedSound.url;
+      audio.volume = 1.0; // Säkerställ max volym i webbläsaren
+      audio.currentTime = 0;
+      audio.play().catch(() => {});
+
+      // Stoppa ljudet efter exakt 5 sekunder
+      alarmStopTimeoutRef.current = window.setTimeout(() => {
+        audio.pause();
+        audio.currentTime = 0;
+      }, 5000);
+    } else {
+      // Fallback om audioRef saknas
+      const tempAudio = new Audio(selectedSound.url);
+      tempAudio.volume = 1.0;
+      tempAudio.play().catch(() => {});
+      setTimeout(() => {
+        tempAudio.pause();
+      }, 5000);
+    }
+  };
+
+  const previewSound = (soundUrl: string) => {
+    const audio = new Audio(soundUrl);
+    audio.volume = 1.0;
+    audio.play().catch(() => {});
+    // Förhandsvisning stoppas också automatiskt efter 5 sekunder
+    setTimeout(() => {
+      audio.pause();
+    }, 5000);
+  };
 
   // Stopwatch Logic
   useEffect(() => {
@@ -93,7 +153,9 @@ const Timer: React.FC = () => {
 
   return (
     <div className="flex flex-col h-full animate-in fade-in duration-500 bg-white overflow-hidden">
-      {/* Mode Selector - Responsive grid/flex */}
+      <audio ref={audioRef} className="hidden" />
+      
+      {/* Mode Selector */}
       <div className="flex flex-wrap p-1 bg-slate-100 rounded-2xl mb-4 mx-auto w-fit border border-slate-200/50 shrink-0">
         {[
           { id: TimerMode.COUNTDOWN, label: 'Timer', icon: '⏱️' },
@@ -116,7 +178,7 @@ const Timer: React.FC = () => {
         ))}
       </div>
 
-      {/* Main Display Area - Uses flex-1 to push controls down */}
+      {/* Main Display Area */}
       <div className="flex-1 flex flex-col items-center justify-center min-h-0 relative px-2 md:px-4">
         
         {/* LÄGE: NEDRÄKNING */}
@@ -238,7 +300,7 @@ const Timer: React.FC = () => {
         )}
       </div>
 
-      {/* Controls Area - Stays visible and pushes up content */}
+      {/* Controls Area */}
       {(mode === TimerMode.COUNTDOWN || mode === TimerMode.TIMETIMER) && (
         <div className="mt-auto px-4 md:px-6 pb-6 space-y-4 shrink-0 bg-slate-50/50 rounded-t-[2rem] md:rounded-t-[2.5rem] pt-6 border-t border-slate-100">
           
@@ -306,7 +368,36 @@ const Timer: React.FC = () => {
             </button>
           </div>
 
-          {/* Quick options - Responsive grid */}
+          {/* Sound Selector */}
+          <div className="space-y-2 max-w-sm mx-auto">
+            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest text-center">Ljudsignal</p>
+            <div className="grid grid-cols-4 gap-1.5">
+              {SOUNDS.map(s => (
+                <div key={s.id} className="relative group">
+                  <button
+                    onClick={() => setSelectedSound(s)}
+                    className={`w-full py-2 rounded-xl text-[9px] font-bold flex flex-col items-center gap-1 transition-all border ${
+                      selectedSound.id === s.id 
+                        ? 'bg-white border-indigo-400 text-indigo-600 shadow-sm' 
+                        : 'bg-white/50 border-slate-100 text-slate-400 hover:border-slate-200'
+                    }`}
+                  >
+                    <span>{s.icon}</span>
+                    <span className="truncate w-full text-center px-1">{s.label}</span>
+                  </button>
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); previewSound(s.url); }}
+                    className="absolute -top-1 -right-1 w-4 h-4 bg-slate-800 text-white rounded-full text-[8px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                    title="Provlyssna"
+                  >
+                    🔊
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Quick options */}
           <div className="grid grid-cols-4 md:grid-cols-7 gap-1.5 max-w-sm mx-auto">
             {[5, 10, 15, 20, 30, 45, 60].map(m => (
               <button
