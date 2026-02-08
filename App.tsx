@@ -235,6 +235,14 @@ const App: React.FC = () => {
                     <span className="text-xl">🧹</span>
                     <span className="text-[7px] font-black uppercase text-slate-400 group-hover:text-red-500 mt-0.5">Rensa</span>
                   </button>
+                  <button onClick={() => { toggleWidget(ToolType.QUICK_LINKS); setIsSystemMenuOpen(false); }} className={`w-14 h-14 bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl flex flex-col items-center justify-center hover:scale-110 active:scale-95 transition-all border border-white group ${openWidgetTypes.includes(ToolType.QUICK_LINKS) ? 'ring-2 ring-indigo-500' : ''}`}>
+                    <span className="text-xl">🔗</span>
+                    <span className="text-[7px] font-black uppercase text-slate-400 group-hover:text-indigo-500 mt-0.5">Länkar</span>
+                  </button>
+                  <button onClick={() => { toggleWidget(ToolType.NOISE_METER); setIsSystemMenuOpen(false); }} className={`w-14 h-14 bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl flex flex-col items-center justify-center hover:scale-110 active:scale-95 transition-all border border-white group ${openWidgetTypes.includes(ToolType.NOISE_METER) ? 'ring-2 ring-indigo-500' : ''}`}>
+                    <span className="text-xl">🔊</span>
+                    <span className="text-[7px] font-black uppercase text-slate-400 group-hover:text-indigo-500 mt-0.5">Ljud</span>
+                  </button>
                   <button onClick={() => { setIsBackgroundSettingsOpen(true); setIsSystemMenuOpen(false); }} className="w-14 h-14 bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl flex flex-col items-center justify-center hover:scale-110 active:scale-95 transition-all border border-white group">
                     <span className="text-xl">🖼️</span>
                     <span className="text-[7px] font-black uppercase text-slate-400 group-hover:text-indigo-500 mt-0.5">Miljö</span>
