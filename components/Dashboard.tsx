@@ -19,9 +19,9 @@ const Dashboard: React.FC<DashboardProps> = ({ onSelectTool, studentsCount, curr
   ];
 
   return (
-    <div className="w-full max-w-6xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-8 duration-700 pb-32">
+    <div className="w-full max-w-6xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-8 duration-700 pb-40 flex flex-col h-full lg:h-auto">
       {/* 1. VÄLKOMMEN RUTA */}
-      <div className="bg-white/80 backdrop-blur-xl border border-white/50 p-6 md:p-10 rounded-[3rem] shadow-2xl text-center relative overflow-hidden">
+      <div className="bg-white/80 backdrop-blur-xl border border-white/50 p-6 md:p-10 rounded-[3rem] shadow-2xl text-center relative overflow-hidden w-full flex-grow-0">
         <div className="absolute top-0 right-0 w-48 h-48 bg-indigo-100/30 rounded-full -mr-24 -mt-24 blur-3xl"></div>
         <div className="absolute bottom-0 left-0 w-48 h-48 bg-amber-100/30 rounded-full -ml-24 -mb-24 blur-3xl"></div>
         
@@ -32,17 +32,17 @@ const Dashboard: React.FC<DashboardProps> = ({ onSelectTool, studentsCount, curr
           <h2 className="text-3xl md:text-5xl font-black text-slate-800 tracking-tight mb-2">
             Klassrums<span className="text-indigo-600">ytan</span>
           </h2>
-          <p className="text-slate-500 text-base md:text-lg max-w-xl mx-auto leading-relaxed opacity-80">
+          <p className="text-slate-500 text-sm md:text-lg max-w-xl mx-auto leading-relaxed opacity-80">
             Ditt digitala skrivbord för en lugnare lektion.
           </p>
         </div>
 
-        <div className="mt-8 grid grid-cols-2 md:grid-cols-4 gap-3 relative z-10">
+        <div className="mt-8 grid grid-cols-2 md:grid-cols-4 gap-4 relative z-10">
           {cards.map((card) => (
             <button
               key={card.type}
               onClick={() => onSelectTool(card.type)}
-              className="group flex flex-col items-center p-4 bg-white/50 border border-white hover:bg-white hover:shadow-lg hover:-translate-y-1 transition-all rounded-[2rem]"
+              className="group flex flex-col items-center p-4 bg-white/50 border border-white hover:bg-white hover:shadow-lg hover:-translate-y-1 transition-all rounded-[2rem] w-full"
             >
               <div className={`w-12 h-12 ${card.color} rounded-xl flex items-center justify-center text-2xl mb-2 group-hover:scale-110 transition-transform`}>
                 {card.icon}
@@ -54,32 +54,37 @@ const Dashboard: React.FC<DashboardProps> = ({ onSelectTool, studentsCount, curr
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      {/* Grid för Bakgrund och AI - Adaptiv höjd */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch flex-grow">
         {/* 2. BAKGRUNDSRUTA */}
-        <div className="bg-white/60 backdrop-blur-lg border border-white/40 p-8 rounded-[3rem] shadow-xl">
-          <h3 className="text-xl font-bold text-slate-800 mb-6 flex items-center gap-3">
+        <div className="bg-white/60 backdrop-blur-lg border border-white/40 p-6 md:p-8 rounded-[3rem] shadow-xl flex flex-col w-full min-h-[300px]">
+          <h3 className="text-xl font-bold text-slate-800 mb-6 flex items-center gap-3 shrink-0">
             <span className="text-2xl">🖼️</span> Bakgrund & Stämning
           </h3>
-          <BackgroundSelector current={currentBackground} onSelect={onBackgroundSelect} />
+          <div className="flex-1 overflow-y-auto custom-scrollbar pr-1">
+            <BackgroundSelector current={currentBackground} onSelect={onBackgroundSelect} />
+          </div>
         </div>
 
         {/* 3. AI RUTA */}
-        <div className="bg-indigo-600 rounded-[3rem] p-8 text-white relative overflow-hidden shadow-xl shadow-indigo-100 group">
-          <div className="relative z-10 h-full flex flex-col justify-center">
-            <h3 className="text-xl font-bold mb-3 flex items-center gap-3">
-              <span className="text-2xl">✨</span> Lektionsinspiration
+        <div className="bg-indigo-600 rounded-[3rem] p-6 md:p-10 text-white relative overflow-hidden shadow-xl shadow-indigo-100 group flex flex-col w-full min-h-[300px]">
+          <div className="relative z-10 flex flex-col justify-center h-full">
+            <h3 className="text-2xl font-black mb-4 flex items-center gap-3 shrink-0">
+              <span className="text-3xl">✨</span> 5-min Aktivitet
             </h3>
-            <p className="text-indigo-100 text-sm mb-8 leading-relaxed">
-              Generera en snabb aktivitet för dina {studentsCount} elever direkt med vår AI-assistent.
+            <p className="text-indigo-100 text-base mb-10 leading-relaxed flex-1">
+              Behöver du bryta av? Generera en snabb aktivitet för dina {studentsCount} elever direkt med vår AI-assistent.
             </p>
             <button 
               onClick={() => onSelectTool(ToolType.ASSISTANT)}
-              className="bg-white text-indigo-600 px-6 py-3 rounded-xl font-bold hover:bg-indigo-50 transition-all w-fit shadow-lg shadow-black/10 group-hover:scale-105"
+              className="bg-white text-indigo-600 px-8 py-5 rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-indigo-50 transition-all w-full md:w-fit shadow-2xl shadow-black/10 group-hover:scale-105 active:scale-95 shrink-0"
             >
-              Öppna Assistenten
+              Starta Assistenten
             </button>
           </div>
-          <div className="absolute top-0 right-0 w-48 h-48 bg-white opacity-5 rounded-full -mr-16 -mt-16 group-hover:scale-110 transition-transform duration-1000"></div>
+          {/* Dekoration */}
+          <div className="absolute top-0 right-0 w-64 h-64 bg-white opacity-5 rounded-full -mr-32 -mt-32 group-hover:scale-110 transition-transform duration-1000"></div>
+          <div className="absolute bottom-0 left-0 w-32 h-32 bg-indigo-400 opacity-10 rounded-full -ml-16 -mb-16"></div>
         </div>
       </div>
     </div>

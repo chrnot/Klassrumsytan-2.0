@@ -47,7 +47,7 @@ const App: React.FC = () => {
   });
   const [maxZIndex, setMaxZIndex] = useState(200);
 
-  // Deriverad data - VIKTIGT: Dessa räknas ut vid varje rendering
+  // Deriverad data
   const currentPage = pages[activePageIndex] || pages[0];
   const activeWidgets = currentPage.widgets.filter(w => w.isOpen);
   const openWidgetTypes = activeWidgets.map(w => w.type);
@@ -83,7 +83,6 @@ const App: React.FC = () => {
   };
 
   const toggleWidget = useCallback((type: ToolType) => {
-    const isMobile = window.innerWidth < 768;
     const existing = currentPage.widgets.find(w => w.type === type);
     const newZ = maxZIndex + 1;
     setMaxZIndex(newZ);
@@ -223,7 +222,7 @@ const App: React.FC = () => {
         </div>
       )}
 
-      <main className="flex-1 relative overflow-hidden">
+      <main className="flex-1 relative overflow-hidden flex flex-col">
         {!isStudent && (
           <div className="absolute top-6 right-6 z-[99999] flex items-start gap-3">
             <button onClick={arrangeWidgets} title="Ordna fönster" className="w-14 h-14 bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl flex items-center justify-center text-2xl hover:scale-110 active:scale-95 transition-all border border-white">🧩</button>
@@ -253,6 +252,7 @@ const App: React.FC = () => {
           </div>
         )}
 
+        {/* Widget layer */}
         <div key={currentPage.id} className="absolute inset-0 z-10 pointer-events-none">
           {activeWidgets.map((w) => (
             <div key={w.id} className="pointer-events-auto">
@@ -270,19 +270,20 @@ const App: React.FC = () => {
           ))}
         </div>
 
+        {/* Bottom Page Navigation - Adjusted for iPad Safe Area */}
         {!isStudent && (
-          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-[99999] flex items-center gap-2 px-6 py-3 bg-white/90 backdrop-blur-xl rounded-[2.5rem] shadow-2xl border border-white/50 animate-in slide-in-from-bottom-4 duration-500">
-             <div className="flex gap-2">
+          <div className="absolute bottom-12 left-1/2 -translate-x-1/2 z-[99999] flex items-center gap-2 px-8 py-4 bg-white/90 backdrop-blur-2xl rounded-[3rem] shadow-2xl border border-white/50 animate-in slide-in-from-bottom-8 duration-500">
+             <div className="flex gap-3">
               {pages.map((p, idx) => (
                 <div key={p.id} className="relative group">
-                  <button onClick={() => setActivePageIndex(idx)} className={`w-10 h-10 rounded-xl font-bold transition-all flex items-center justify-center border-2 ${activePageIndex === idx ? 'bg-indigo-600 text-white border-indigo-400 shadow-lg scale-110' : 'bg-white border-slate-100 text-slate-400 hover:border-indigo-200 hover:text-indigo-500'}`}>{idx + 1}</button>
+                  <button onClick={() => setActivePageIndex(idx)} className={`w-12 h-12 rounded-2xl font-black transition-all flex items-center justify-center border-2 ${activePageIndex === idx ? 'bg-indigo-600 text-white border-indigo-400 shadow-xl scale-110' : 'bg-white border-slate-100 text-slate-400 hover:border-indigo-200 hover:text-indigo-500'}`}>{idx + 1}</button>
                   {pages.length > 1 && (
-                    <button onClick={(e) => { e.stopPropagation(); setPages(prev => prev.filter((_, i) => i !== idx)); }} className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white rounded-full text-[8px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">✕</button>
+                    <button onClick={(e) => { e.stopPropagation(); setPages(prev => prev.filter((_, i) => i !== idx)); }} className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 text-white rounded-full text-[10px] font-bold flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-sm">✕</button>
                   )}
                 </div>
               ))}
               {pages.length < 6 && (
-                <button onClick={() => { const newP = { id: Math.random().toString(36).substr(2, 9), name: `Sida ${pages.length + 1}`, background: 'bg-slate-100', widgets: [] }; setPages([...pages, newP]); setActivePageIndex(pages.length); }} className="w-10 h-10 rounded-xl bg-slate-50 border-2 border-dashed border-slate-200 text-slate-400 flex items-center justify-center hover:border-indigo-300 hover:text-indigo-500 transition-all">＋</button>
+                <button onClick={() => { const newP = { id: Math.random().toString(36).substr(2, 9), name: `Sida ${pages.length + 1}`, background: 'bg-slate-100', widgets: [] }; setPages([...pages, newP]); setActivePageIndex(pages.length); }} className="w-12 h-12 rounded-2xl bg-slate-50 border-2 border-dashed border-slate-200 text-slate-400 flex items-center justify-center hover:border-indigo-300 hover:text-indigo-500 transition-all">＋</button>
               )}
             </div>
           </div>
@@ -306,7 +307,7 @@ const App: React.FC = () => {
         )}
         
         {activeWidgets.length === 0 && (
-          <div className="absolute inset-0 flex items-center justify-center p-10 overflow-y-auto">
+          <div className="flex-1 flex items-center justify-center p-4 md:p-10 overflow-y-auto">
             <Dashboard onSelectTool={toggleWidget} studentsCount={students.length} currentBackground={currentPage.background} onBackgroundSelect={(bg) => updateCurrentPage({ background: bg })} />
           </div>
         )}
