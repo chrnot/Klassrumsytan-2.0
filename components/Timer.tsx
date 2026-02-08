@@ -11,7 +11,7 @@ enum TimerMode {
 type ClockType = 'digital' | 'analog';
 
 const SOUNDS = [
-  { id: 'alarm', label: 'Alarm', icon: '🔔', url: 'https://actions.google.com/sounds/v1/alarms/alarm_clock_ringing_rising.ogg' },
+  { id: 'alarm', label: 'Alarm', icon: '⏰', url: 'https://actions.google.com/sounds/v1/alarms/oscillating_beeps.ogg' },
   { id: 'digital', label: 'Digital', icon: '📟', url: 'https://actions.google.com/sounds/v1/alarms/digital_watch_alarm_long.ogg' },
   { id: 'bell', label: 'Skolklocka', icon: '🏫', url: 'https://actions.google.com/sounds/v1/alarms/mechanical_clock_ring.ogg' },
   { id: 'ding', label: 'Plinn', icon: '✨', url: 'https://actions.google.com/sounds/v1/alarms/beep_short.ogg' },
@@ -28,8 +28,12 @@ const Timer: React.FC = () => {
   const [stopwatchSeconds, setStopwatchSeconds] = useState(0);
   const [stopwatchActive, setStopwatchActive] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
+  
   const [isEditingMinutes, setIsEditingMinutes] = useState(false);
   const [manualMinutes, setManualMinutes] = useState('');
+  const [isEditingSeconds, setIsEditingSeconds] = useState(false);
+  const [manualSeconds, setManualSeconds] = useState('');
+
   const [selectedSound, setSelectedSound] = useState(SOUNDS[0]);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -47,14 +51,15 @@ const Timer: React.FC = () => {
     if (isActive && seconds > 0) {
       interval = setInterval(() => setSeconds(s => s - 1), 1000);
     } else if (seconds === 0 && isActive) {
-      setIsActive(false);
       playAlarm();
+      setIsActive(false);
+      
       setTimeout(() => {
         alert('Tiden är ute! 🔔');
-      }, 100);
+      }, 150);
     }
     return () => clearInterval(interval);
-  }, [isActive, seconds]);
+  }, [isActive, seconds, selectedSound]);
 
   // Clean up timeout on unmount
   useEffect(() => {
@@ -66,30 +71,37 @@ const Timer: React.FC = () => {
   }, []);
 
   const playAlarm = () => {
-    // Rensa eventuella gamla stopp-timers
     if (alarmStopTimeoutRef.current) {
       window.clearTimeout(alarmStopTimeoutRef.current);
     }
 
     const audio = audioRef.current;
     if (audio) {
-      audio.src = selectedSound.url;
-      audio.volume = 1.0; // Säkerställ max volym i webbläsaren
-      audio.currentTime = 0;
-      audio.play().catch(() => {});
-
-      // Stoppa ljudet efter exakt 5 sekunder
-      alarmStopTimeoutRef.current = window.setTimeout(() => {
+      try {
         audio.pause();
         audio.currentTime = 0;
-      }, 5000);
-    } else {
-      // Fallback om audioRef saknas
-      const tempAudio = new Audio(selectedSound.url);
-      tempAudio.volume = 1.0;
-      tempAudio.play().catch(() => {});
-      setTimeout(() => {
-        tempAudio.pause();
+        audio.src = selectedSound.url;
+        audio.volume = 1.0;
+        audio.load();
+        
+        const playPromise = audio.play();
+        if (playPromise !== undefined) {
+          playPromise.catch(() => {
+            // Fallback om audioRef-elementet nekas (t.ex. pga webbläsarrestriktioner)
+            const fallbackAudio = new Audio(selectedSound.url);
+            fallbackAudio.volume = 1.0;
+            fallbackAudio.play().catch(e => console.error("Fallback play failed", e));
+          });
+        }
+      } catch (e) {
+        console.error("Audio error", e);
+      }
+
+      alarmStopTimeoutRef.current = window.setTimeout(() => {
+        if (audio) {
+          audio.pause();
+          audio.currentTime = 0;
+        }
       }, 5000);
     }
   };
@@ -97,8 +109,7 @@ const Timer: React.FC = () => {
   const previewSound = (soundUrl: string) => {
     const audio = new Audio(soundUrl);
     audio.volume = 1.0;
-    audio.play().catch(() => {});
-    // Förhandsvisning stoppas också automatiskt efter 5 sekunder
+    audio.play().catch(e => console.error("Preview failed", e));
     setTimeout(() => {
       audio.pause();
     }, 5000);
@@ -124,10 +135,8 @@ const Timer: React.FC = () => {
   , [seconds, initialTime]);
 
   // Granular adjustments
-  const adjustMinutes = (delta: number) => {
-    const currentMins = Math.floor(seconds / 60);
-    const newMins = Math.max(0, currentMins + delta);
-    const newTotalSeconds = newMins * 60;
+  const adjustTotalTime = (delta: number) => {
+    const newTotalSeconds = Math.max(0, seconds + delta);
     setSeconds(newTotalSeconds);
     setInitialTime(newTotalSeconds);
     if (newTotalSeconds === 0) setIsActive(false);
@@ -136,14 +145,29 @@ const Timer: React.FC = () => {
   const handleManualMinutesSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const val = parseInt(manualMinutes);
+    const currentSeconds = seconds % 60;
     if (!isNaN(val) && val >= 0) {
-      const newSeconds = val * 60;
-      setSeconds(newSeconds);
-      setInitialTime(newSeconds);
+      const newTotal = (val * 60) + currentSeconds;
+      setSeconds(newTotal);
+      setInitialTime(newTotal);
       setIsActive(false);
     }
     setIsEditingMinutes(false);
     setManualMinutes('');
+  };
+
+  const handleManualSecondsSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const val = parseInt(manualSeconds);
+    const currentMinutes = Math.floor(seconds / 60);
+    if (!isNaN(val) && val >= 0) {
+      const newTotal = (currentMinutes * 60) + val;
+      setSeconds(newTotal);
+      setInitialTime(newTotal);
+      setIsActive(false);
+    }
+    setIsEditingSeconds(false);
+    setManualSeconds('');
   };
 
   // Analog Clock Math
@@ -153,7 +177,7 @@ const Timer: React.FC = () => {
 
   return (
     <div className="flex flex-col h-full animate-in fade-in duration-500 bg-white overflow-hidden">
-      <audio ref={audioRef} className="hidden" />
+      <audio ref={audioRef} className="hidden" preload="auto" />
       
       {/* Mode Selector */}
       <div className="flex flex-wrap p-1 bg-slate-100 rounded-2xl mb-4 mx-auto w-fit border border-slate-200/50 shrink-0">
@@ -305,43 +329,89 @@ const Timer: React.FC = () => {
         <div className="mt-auto px-4 md:px-6 pb-6 space-y-4 shrink-0 bg-slate-50/50 rounded-t-[2rem] md:rounded-t-[2.5rem] pt-6 border-t border-slate-100">
           
           {/* Detailed Adjustment Row */}
-          <div className="flex items-center justify-center gap-4 md:gap-6">
-            <button 
-              onClick={() => adjustMinutes(-1)}
-              className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-white border border-slate-200 text-slate-600 font-bold text-xl flex items-center justify-center hover:bg-slate-50 active:scale-90 transition-all shadow-sm"
-            >
-              -
-            </button>
+          <div className="flex items-center justify-center gap-2 md:gap-4">
             
-            {isEditingMinutes ? (
-              <form onSubmit={handleManualMinutesSubmit}>
-                <input
-                  autoFocus
-                  type="number"
-                  value={manualMinutes}
-                  onChange={(e) => setManualMinutes(e.target.value)}
-                  onBlur={handleManualMinutesSubmit}
-                  className="w-16 md:w-20 text-center bg-white border-2 border-indigo-400 rounded-xl px-2 py-1 text-lg font-black text-indigo-600 outline-none"
-                />
-              </form>
-            ) : (
-              <div 
-                onClick={() => { setManualMinutes(Math.floor(seconds / 60).toString()); setIsEditingMinutes(true); }}
-                className="flex flex-col items-center cursor-pointer hover:opacity-70"
-              >
-                <span className="text-xl md:text-2xl font-black text-slate-800 leading-none">
-                  {Math.floor(seconds / 60)}
-                </span>
-                <span className="text-[8px] md:text-[10px] font-black uppercase text-slate-400 tracking-widest mt-1">Minuter</span>
+            {/* Minutes Column */}
+            <div className="flex flex-col items-center gap-1">
+              <div className="flex items-center gap-1.5">
+                <button 
+                  onClick={() => adjustTotalTime(-60)}
+                  className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-white border border-slate-200 text-slate-600 font-bold text-lg flex items-center justify-center hover:bg-slate-50 active:scale-90 transition-all shadow-sm"
+                >
+                  -
+                </button>
+                {isEditingMinutes ? (
+                  <form onSubmit={handleManualMinutesSubmit}>
+                    <input
+                      autoFocus
+                      type="number"
+                      value={manualMinutes}
+                      onChange={(e) => setManualMinutes(e.target.value)}
+                      onBlur={handleManualMinutesSubmit}
+                      className="w-12 md:w-16 text-center bg-white border-2 border-indigo-400 rounded-xl px-1 py-1 text-base md:text-lg font-black text-indigo-600 outline-none tabular-nums"
+                    />
+                  </form>
+                ) : (
+                  <div 
+                    onClick={() => { setManualMinutes(Math.floor(seconds / 60).toString()); setIsEditingMinutes(true); }}
+                    className="flex flex-col items-center cursor-pointer hover:bg-indigo-50 px-3 py-1 rounded-xl transition-colors"
+                  >
+                    <span className="text-xl md:text-2xl font-black text-slate-800 leading-none tabular-nums">
+                      {Math.floor(seconds / 60)}
+                    </span>
+                  </div>
+                )}
+                <button 
+                  onClick={() => adjustTotalTime(60)}
+                  className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-white border border-slate-200 text-slate-600 font-bold text-lg flex items-center justify-center hover:bg-slate-50 active:scale-90 transition-all shadow-sm"
+                >
+                  +
+                </button>
               </div>
-            )}
+              <span className="text-[7px] md:text-[8px] font-black uppercase text-slate-400 tracking-widest">Minuter</span>
+            </div>
 
-            <button 
-              onClick={() => adjustMinutes(1)}
-              className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-white border border-slate-200 text-slate-600 font-bold text-xl flex items-center justify-center hover:bg-slate-50 active:scale-90 transition-all shadow-sm"
-            >
-              +
-            </button>
+            <span className="text-xl md:text-2xl font-black text-slate-300 pb-4">:</span>
+
+            {/* Seconds Column */}
+            <div className="flex flex-col items-center gap-1">
+              <div className="flex items-center gap-1.5">
+                <button 
+                  onClick={() => adjustTotalTime(-10)}
+                  className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-white border border-slate-200 text-slate-600 font-bold text-lg flex items-center justify-center hover:bg-slate-50 active:scale-90 transition-all shadow-sm"
+                >
+                  -
+                </button>
+                {isEditingSeconds ? (
+                  <form onSubmit={handleManualSecondsSubmit}>
+                    <input
+                      autoFocus
+                      type="number"
+                      value={manualSeconds}
+                      onChange={(e) => setManualSeconds(e.target.value)}
+                      onBlur={handleManualSecondsSubmit}
+                      className="w-12 md:w-16 text-center bg-white border-2 border-indigo-400 rounded-xl px-1 py-1 text-base md:text-lg font-black text-indigo-600 outline-none tabular-nums"
+                    />
+                  </form>
+                ) : (
+                  <div 
+                    onClick={() => { setManualSeconds((seconds % 60).toString()); setIsEditingSeconds(true); }}
+                    className="flex flex-col items-center cursor-pointer hover:bg-indigo-50 px-3 py-1 rounded-xl transition-colors"
+                  >
+                    <span className="text-xl md:text-2xl font-black text-slate-800 leading-none tabular-nums">
+                      {Math.floor(seconds % 60).toString().padStart(2, '0')}
+                    </span>
+                  </div>
+                )}
+                <button 
+                  onClick={() => adjustTotalTime(10)}
+                  className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-white border border-slate-200 text-slate-600 font-bold text-lg flex items-center justify-center hover:bg-slate-50 active:scale-90 transition-all shadow-sm"
+                >
+                  +
+                </button>
+              </div>
+              <span className="text-[7px] md:text-[8px] font-black uppercase text-slate-400 tracking-widest">Sekunder</span>
+            </div>
           </div>
 
           <div className="flex gap-2 max-w-sm mx-auto">
@@ -408,7 +478,7 @@ const Timer: React.FC = () => {
                   setIsActive(false);
                 }}
                 className={`py-1.5 bg-white border rounded-xl text-[9px] font-black uppercase tracking-tighter transition-all active:scale-95 ${
-                  Math.floor(seconds / 60) === m 
+                  Math.floor(seconds / 60) === m && seconds % 60 === 0
                     ? 'border-indigo-500 text-indigo-600 bg-indigo-50' 
                     : 'border-slate-200 text-slate-500 hover:border-slate-300'
                 }`}
