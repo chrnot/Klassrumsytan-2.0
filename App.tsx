@@ -22,6 +22,8 @@ import QuickLinks from './components/QuickLinks';
 import LinkWidget from './components/LinkWidget';
 import ClassroomPlacement from './components/ClassroomPlacement';
 import LessonNavigator from './components/LessonNavigator';
+import TieredTaskCard from './components/TieredTaskCard';
+import MindsetCheck from './components/MindsetCheck';
 
 const App: React.FC = () => {
   const queryParams = new URLSearchParams(window.location.search);
@@ -84,6 +86,8 @@ const App: React.FC = () => {
       case ToolType.PLACEMENT: return { width: 1100, height: 850 };
       case ToolType.LINK: return { width: 220, height: 220 };
       case ToolType.LESSON_NAVIGATOR: return { width: 750, height: 750 };
+      case ToolType.TIERED_TASK: return { width: 900, height: 800 };
+      case ToolType.MINDSET_CHECK: return { width: 850, height: 850 };
       default: return { width: 700, height: 750 };
     }
   };
@@ -104,6 +108,8 @@ const App: React.FC = () => {
     [ToolType.QUICK_LINKS]: "Hanterare för genvägar. Skapa fristående små fönster för de webbplatser du vill att eleverna ska ha nära till hands.",
     [ToolType.PLACEMENT]: "Verktyg för att planera klassrummets möblering och placering. Algoritmen hjälper dig att placera eleverna utifrån dina pedagogiska regler.",
     [ToolType.LESSON_NAVIGATOR]: "Lektions-Navigatören hjälper dig att strukturera lektionen visuellt. Sätt upp mål, lista centrala begrepp och följ lektionens olika moment på en tydlig tidslinje för att ge eleverna lugn och förutsägbarhet.",
+    [ToolType.TIERED_TASK]: "Nivå-Kortet möjliggör enkel differentiering. Presentera en uppgift med dolda lager av progressivt stöd (ledtrådar) och utmanande följdfrågor för de som blir klara tidigt.",
+    [ToolType.MINDSET_CHECK]: "Känslo-Termometern mäter elevernas självbild inför och efter ett moment. Visualisera förflyttningen från Panik-zonen till Lär-zonen.",
     [ToolType.LINK]: "En snabbknapp som öppnar en specifik webbplats i en ny flik.",
     [ToolType.DASHBOARD]: "",
     [ToolType.BACKGROUND]: "",
@@ -243,6 +249,8 @@ const App: React.FC = () => {
       case ToolType.PLACEMENT: return <ClassroomPlacement students={students} setStudents={setStudents} />;
       case ToolType.LINK: return <LinkWidget url={widget.data?.url} title={widget.data?.title} />;
       case ToolType.LESSON_NAVIGATOR: return <LessonNavigator />;
+      case ToolType.TIERED_TASK: return <TieredTaskCard />;
+      case ToolType.MINDSET_CHECK: return <MindsetCheck />;
       default: return null;
     }
   };
@@ -263,6 +271,8 @@ const App: React.FC = () => {
     [ToolType.QUICK_LINKS]: { title: 'Genvägar', icon: '🔗' },
     [ToolType.PLACEMENT]: { title: 'Klassplacering', icon: '🪑' },
     [ToolType.LESSON_NAVIGATOR]: { title: 'Lektions-Navigatör', icon: '🧭' },
+    [ToolType.TIERED_TASK]: { title: 'Nivå-Kortet', icon: '🎴' },
+    [ToolType.MINDSET_CHECK]: { title: 'Känslo-Termometern', icon: '🌡️' },
     [ToolType.LINK]: { title: 'Länk', icon: '🔗' }
   };
 
@@ -327,6 +337,14 @@ const App: React.FC = () => {
                   <button onClick={() => { toggleWidget(ToolType.QUICK_LINKS); setIsSystemMenuOpen(false); }} className={`w-14 h-14 bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl flex flex-col items-center justify-center hover:scale-110 active:scale-95 transition-all border border-white group ${openWidgetTypes.includes(ToolType.QUICK_LINKS) ? 'ring-2 ring-indigo-500' : ''}`}>
                     <span className="text-xl">🔗</span>
                     <span className="text-[7px] font-black uppercase text-slate-400 group-hover:text-indigo-500 mt-0.5">Länkar</span>
+                  </button>
+                  <button onClick={() => { toggleWidget(ToolType.TIERED_TASK); setIsSystemMenuOpen(false); }} className={`w-14 h-14 bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl flex flex-col items-center justify-center hover:scale-110 active:scale-95 transition-all border border-white group ${openWidgetTypes.includes(ToolType.TIERED_TASK) ? 'ring-2 ring-indigo-500' : ''}`}>
+                    <span className="text-xl">🎴</span>
+                    <span className="text-[7px] font-black uppercase text-slate-400 group-hover:text-indigo-500 mt-0.5">Nivå</span>
+                  </button>
+                  <button onClick={() => { toggleWidget(ToolType.MINDSET_CHECK); setIsSystemMenuOpen(false); }} className={`w-14 h-14 bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl flex flex-col items-center justify-center hover:scale-110 active:scale-95 transition-all border border-white group ${openWidgetTypes.includes(ToolType.MINDSET_CHECK) ? 'ring-2 ring-indigo-500' : ''}`}>
+                    <span className="text-xl">🌡️</span>
+                    <span className="text-[7px] font-black uppercase text-slate-400 group-hover:text-indigo-500 mt-0.5">Mindset</span>
                   </button>
                   <button onClick={() => { toggleWidget(ToolType.NOISE_METER); setIsSystemMenuOpen(false); }} className={`w-14 h-14 bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl flex flex-col items-center justify-center hover:scale-110 active:scale-95 transition-all border border-white group ${openWidgetTypes.includes(ToolType.NOISE_METER) ? 'ring-2 ring-indigo-500' : ''}`}>
                     <span className="text-xl">🔊</span>
