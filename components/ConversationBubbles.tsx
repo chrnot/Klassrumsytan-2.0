@@ -1,22 +1,23 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 
-type SubjectMode = 'general' | 'so' | 'no' | 'language';
+type BubbleCategory = 'build' | 'challenge' | 'clarify' | 'connect';
+type SubjectMode = 'general' | 'so' | 'no' | 'language' | 'custom';
 
 interface Bubble {
   id: string;
-  category: 'build' | 'challenge' | 'clarify' | 'connect';
+  category: BubbleCategory;
   text: string;
 }
 
-const CATEGORIES = {
+const CATEGORIES: Record<BubbleCategory, { label: string; color: string; light: string; text: string; icon: string }> = {
   build: { label: 'Bygga vidare', color: 'bg-emerald-500', light: 'bg-emerald-50', text: 'text-emerald-700', icon: '🌱' },
   challenge: { label: 'Utmana/Vända', color: 'bg-rose-500', light: 'bg-rose-50', text: 'text-rose-700', icon: '🔄' },
   clarify: { label: 'Förtydliga', color: 'bg-amber-400', light: 'bg-amber-50', text: 'text-amber-700', icon: '🔍' },
   connect: { label: 'Undra/Koppla', color: 'bg-indigo-500', light: 'bg-indigo-50', text: 'text-indigo-700', icon: '🔗' }
 };
 
-const BUBBLE_DATA: Record<SubjectMode, Bubble[]> = {
+const BUBBLE_DATA: Record<Exclude<SubjectMode, 'custom'>, Bubble[]> = {
   general: [
     { id: 'g1', category: 'build', text: 'Jag vill fylla på det du sa med att...' },
     { id: 'g2', category: 'build', text: 'En annan sak som hänger ihop med det är...' },
@@ -51,11 +52,30 @@ const BUBBLE_DATA: Record<SubjectMode, Bubble[]> = {
 };
 
 const ConversationBubbles: React.FC = () => {
-  const [mode, setMode] = useState<SubjectMode>('general');
+  const [mode, setMode] = useState<SubjectMode>(() => {
+    return (localStorage.getItem('kp_bubbles_mode') as SubjectMode) || 'general';
+  });
+  
+  const [customBubbles, setCustomBubbles] = useState<Bubble[]>(() => {
+    const saved = localStorage.getItem('kp_custom_bubbles');
+    return saved ? JSON.parse(saved) : [
+      { id: 'c1', category: 'build', text: 'Skriv din egen meningsbyggare här...' }
+    ];
+  });
+
   const [highlightedId, setHighlightedId] = useState<string | null>(null);
   const [timerSeconds, setTimerSeconds] = useState(300);
   const [isTimerActive, setIsTimerActive] = useState(false);
   const [randomizing, setRandomizing] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+
+  useEffect(() => {
+    localStorage.setItem('kp_bubbles_mode', mode);
+  }, [mode]);
+
+  useEffect(() => {
+    localStorage.setItem('kp_custom_bubbles', JSON.stringify(customBubbles));
+  }, [customBubbles]);
 
   // Timer Logic
   useEffect(() => {
@@ -74,9 +94,13 @@ const ConversationBubbles: React.FC = () => {
     return `${min}:${sec.toString().padStart(2, '0')}`;
   };
 
-  const currentBubbles = useMemo(() => BUBBLE_DATA[mode], [mode]);
+  const currentBubbles = useMemo(() => {
+    if (mode === 'custom') return customBubbles;
+    return BUBBLE_DATA[mode];
+  }, [mode, customBubbles]);
 
   const slumpa = () => {
+    if (currentBubbles.length === 0) return;
     setRandomizing(true);
     setHighlightedId(null);
     let count = 0;
@@ -95,6 +119,23 @@ const ConversationBubbles: React.FC = () => {
     setTimerSeconds(prev => Math.max(0, prev + amount));
   };
 
+  const addCustomBubble = () => {
+    const newBubble: Bubble = {
+      id: Math.random().toString(36).substr(2, 9),
+      category: 'build',
+      text: 'Ny meningsbyggare...'
+    };
+    setCustomBubbles([...customBubbles, newBubble]);
+  };
+
+  const updateCustomBubble = (id: string, updates: Partial<Bubble>) => {
+    setCustomBubbles(prev => prev.map(b => b.id === id ? { ...b, ...updates } : b));
+  };
+
+  const removeCustomBubble = (id: string) => {
+    setCustomBubbles(prev => prev.filter(b => b.id !== id));
+  };
+
   return (
     <div className="flex flex-col h-full bg-white animate-in fade-in duration-500 overflow-hidden">
       <header className="flex flex-wrap items-center justify-between gap-4 border-b pb-4 px-2 shrink-0">
@@ -109,49 +150,97 @@ const ConversationBubbles: React.FC = () => {
         <div className="flex items-center gap-2">
           <select 
             value={mode} 
-            onChange={(e) => { setMode(e.target.value as SubjectMode); setHighlightedId(null); }}
+            onChange={(e) => { 
+              const newMode = e.target.value as SubjectMode;
+              setMode(newMode); 
+              setHighlightedId(null); 
+              if (newMode !== 'custom') setIsEditing(false);
+            }}
             className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-[10px] font-black uppercase outline-none focus:ring-2 focus:ring-indigo-500 transition-all cursor-pointer"
           >
             <option value="general">🌍 Generellt</option>
             <option value="so">🏛️ SO-läge</option>
             <option value="no">🧪 NO-läge</option>
             <option value="language">📖 Språk/Analys</option>
+            <option value="custom">⚙️ Eget ämne</option>
           </select>
+
+          {mode === 'custom' && (
+            <button 
+              onClick={() => setIsEditing(!isEditing)}
+              className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase transition-all shadow-sm ${isEditing ? 'bg-emerald-600 text-white' : 'bg-white border border-slate-200 text-slate-500 hover:border-indigo-300'}`}
+            >
+              {isEditing ? 'Spara' : 'Redigera'}
+            </button>
+          )}
+
           <button 
             onClick={slumpa} 
-            disabled={randomizing}
-            className="bg-indigo-600 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase hover:bg-indigo-700 shadow-lg active:scale-95 transition-all"
+            disabled={randomizing || currentBubbles.length === 0}
+            className="bg-indigo-600 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase hover:bg-indigo-700 shadow-lg active:scale-95 transition-all disabled:opacity-50"
           >
-            🎲 Slumpa utmaning
+            🎲 Slumpa
           </button>
         </div>
       </header>
 
       <div className="flex-1 relative flex flex-col items-center justify-center p-4">
         {/* CENTER TIMER DISK */}
-        <div className="z-20 mb-8 md:mb-0">
-          <div className={`w-32 h-32 md:w-44 md:h-44 rounded-full border-8 border-slate-50 shadow-2xl flex flex-col items-center justify-center transition-all duration-700 ${isTimerActive ? 'bg-indigo-50 ring-8 ring-indigo-100' : 'bg-white'}`}>
-             <span className="text-[8px] font-black uppercase text-slate-400 tracking-widest mb-1">Samtalstid</span>
-             <span className={`text-2xl md:text-4xl font-black tabular-nums transition-colors ${isTimerActive ? 'text-indigo-600' : 'text-slate-800'}`}>
-               {formatTime(timerSeconds)}
-             </span>
-             <div className="flex gap-2 mt-2">
-               <button onClick={() => setIsTimerActive(!isTimerActive)} className="w-8 h-8 flex items-center justify-center bg-white rounded-full shadow-sm border border-slate-100 text-xs hover:scale-110 transition-transform">
-                 {isTimerActive ? '⏸' : '▶'}
-               </button>
-               <button onClick={() => adjustTimer(60)} className="w-8 h-8 flex items-center justify-center bg-white rounded-full shadow-sm border border-slate-100 text-[10px] font-bold hover:scale-110 transition-transform">
-                 +1m
-               </button>
-             </div>
+        {!isEditing && (
+          <div className="z-20 mb-8 md:mb-0">
+            <div className={`w-32 h-32 md:w-44 md:h-44 rounded-full border-8 border-slate-50 shadow-2xl flex flex-col items-center justify-center transition-all duration-700 ${isTimerActive ? 'bg-indigo-50 ring-8 ring-indigo-100' : 'bg-white'}`}>
+              <span className="text-[8px] font-black uppercase text-slate-400 tracking-widest mb-1">Samtalstid</span>
+              <span className={`text-2xl md:text-4xl font-black tabular-nums transition-colors ${isTimerActive ? 'text-indigo-600' : 'text-slate-800'}`}>
+                {formatTime(timerSeconds)}
+              </span>
+              <div className="flex gap-2 mt-2">
+                <button onClick={() => setIsTimerActive(!isTimerActive)} className="w-8 h-8 flex items-center justify-center bg-white rounded-full shadow-sm border border-slate-100 text-xs hover:scale-110 transition-transform">
+                  {isTimerActive ? '⏸' : '▶'}
+                </button>
+                <button onClick={() => adjustTimer(60)} className="w-8 h-8 flex items-center justify-center bg-white rounded-full shadow-sm border border-slate-100 text-[10px] font-bold hover:scale-110 transition-transform">
+                  +1m
+                </button>
+              </div>
+            </div>
           </div>
-        </div>
+        )}
 
         {/* FLOATING BUBBLES GRID */}
-        <div className="w-full grid grid-cols-1 sm:grid-cols-2 gap-4 mt-8 overflow-y-auto custom-scrollbar px-2 max-h-[60%] md:max-h-none">
+        <div className={`w-full grid grid-cols-1 sm:grid-cols-2 gap-4 ${isEditing ? 'mt-0' : 'mt-8'} overflow-y-auto custom-scrollbar px-2 max-h-[70%] md:max-h-none`}>
           {currentBubbles.map((bubble) => {
             const cat = CATEGORIES[bubble.category];
             const isHighlighted = highlightedId === bubble.id;
             
+            if (isEditing && mode === 'custom') {
+              return (
+                <div key={bubble.id} className={`${cat.light} p-5 rounded-[2.5rem] border-2 border-slate-100 flex flex-col gap-3 relative animate-in zoom-in-95 duration-200`}>
+                  <div className="flex items-center justify-between gap-2">
+                    <select 
+                      value={bubble.category}
+                      onChange={(e) => updateCustomBubble(bubble.id, { category: e.target.value as BubbleCategory })}
+                      className="bg-white border border-slate-200 rounded-lg px-2 py-1 text-[9px] font-black uppercase outline-none"
+                    >
+                      {Object.entries(CATEGORIES).map(([key, val]) => (
+                        <option key={key} value={key}>{val.icon} {val.label}</option>
+                      ))}
+                    </select>
+                    <button 
+                      onClick={() => removeCustomBubble(bubble.id)}
+                      className="text-slate-300 hover:text-red-500 transition-colors"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                  <textarea 
+                    value={bubble.text}
+                    onChange={(e) => updateCustomBubble(bubble.id, { text: e.target.value })}
+                    className="w-full bg-white/50 border border-slate-200 rounded-xl p-2 text-sm font-bold resize-none outline-none focus:ring-2 focus:ring-indigo-400"
+                    rows={2}
+                  />
+                </div>
+              );
+            }
+
             return (
               <button
                 key={bubble.id}
@@ -178,12 +267,29 @@ const ConversationBubbles: React.FC = () => {
                     <div className="absolute -top-2 -right-2 text-white/40 animate-pulse">✨</div>
                   )}
                 </div>
-                {/* Decorative background shape */}
                 <div className={`absolute top-0 right-0 w-24 h-24 rounded-full -mr-12 -mt-12 transition-all duration-1000 ${isHighlighted ? 'bg-white opacity-10' : 'bg-black opacity-[0.02]'}`} />
               </button>
             );
           })}
+
+          {isEditing && mode === 'custom' && (
+            <button 
+              onClick={addCustomBubble}
+              className="border-2 border-dashed border-slate-200 rounded-[2.5rem] p-5 flex flex-col items-center justify-center text-slate-400 hover:text-indigo-500 hover:border-indigo-300 transition-all group"
+            >
+              <span className="text-3xl mb-2 group-hover:scale-110 transition-transform">➕</span>
+              <span className="text-[10px] font-black uppercase tracking-widest">Lägg till bubbla</span>
+            </button>
+          )}
         </div>
+
+        {currentBubbles.length === 0 && !isEditing && (
+          <div className="text-center p-10 bg-slate-50 rounded-[3rem] border-2 border-dashed border-slate-200 animate-in fade-in duration-500">
+            <span className="text-5xl mb-4 block">😶</span>
+            <h3 className="text-lg font-black text-slate-800">Inga bubblor än</h3>
+            <p className="text-slate-400 text-xs">Välj "Eget ämne" och "Redigera" för att skapa dina första bubblor.</p>
+          </div>
+        )}
       </div>
 
       <footer className="shrink-0 p-4 border-t border-slate-50 bg-slate-50/50 flex justify-between items-center rounded-b-[2.5rem]">
@@ -192,7 +298,7 @@ const ConversationBubbles: React.FC = () => {
           <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Klassens samtalsmål: Lyssna färdigt</span>
         </div>
         <p className="text-[9px] text-slate-400 font-medium italic">
-          Tryck på en bubbla för att highlighta "Dagens Bubbla".
+          {isEditing ? 'Klicka på "Spara" när du är nöjd.' : 'Tryck på en bubbla för att highlighta.'}
         </p>
       </footer>
     </div>
