@@ -1,16 +1,16 @@
 
 import React, { useState, useRef } from 'react';
-import { Student } from '../types';
+import { PlacementStudent } from '../types';
 
 interface RandomizerProps {
-  students: Student[];
-  setStudents: React.Dispatch<React.SetStateAction<Student[]>>;
+  students: PlacementStudent[];
+  setStudents: React.Dispatch<React.SetStateAction<PlacementStudent[]>>;
 }
 
 const Randomizer: React.FC<RandomizerProps> = ({ students, setStudents }) => {
   const [newName, setNewName] = useState('');
   const [isShuffling, setIsShuffling] = useState(false);
-  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
+  const [selectedStudent, setSelectedStudent] = useState<PlacementStudent | null>(null);
   const [isBulkOpen, setIsBulkOpen] = useState(false);
   const [bulkInput, setBulkInput] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -18,7 +18,17 @@ const Randomizer: React.FC<RandomizerProps> = ({ students, setStudents }) => {
   const addStudent = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newName.trim()) return;
-    setStudents([...students, { id: Math.random().toString(36).substr(2, 9), name: newName.trim() }]);
+    const newS: PlacementStudent = {
+      id: Math.random().toString(36).substr(2, 9),
+      name: newName.trim(),
+      gender: 'okant',
+      condition: 'ingen',
+      notWith: [],
+      prefNotWith: [],
+      prefWith: [],
+      isPlaced: false
+    };
+    setStudents([...students, newS]);
     setNewName('');
   };
 
@@ -29,15 +39,20 @@ const Randomizer: React.FC<RandomizerProps> = ({ students, setStudents }) => {
   const handleBulkAdd = () => {
     if (!bulkInput.trim()) return;
     
-    // Dela upp på komma, semikolon eller ny rad
     const names = bulkInput
       .split(/[,\n;]/)
       .map(n => n.trim())
       .filter(n => n !== "");
 
-    const newStudents = names.map(name => ({
+    const newStudents: PlacementStudent[] = names.map(name => ({
       id: Math.random().toString(36).substr(2, 9),
-      name
+      name,
+      gender: 'okant',
+      condition: 'ingen',
+      notWith: [],
+      prefNotWith: [],
+      prefWith: [],
+      isPlaced: false
     }));
 
     setStudents([...students, ...newStudents]);

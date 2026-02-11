@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { ToolType, Student, WidgetInstance, PageData } from './types';
+import { ToolType, Student, PlacementStudent, WidgetInstance, PageData } from './types';
 import Sidebar from './components/Sidebar';
 import Timer from './components/Timer';
 import Randomizer from './components/Randomizer';
@@ -19,6 +19,7 @@ import StudentPollView from './components/StudentPollView';
 import GeminiAssistant from './components/GeminiAssistant';
 import VideoPlayer from './components/VideoPlayer';
 import QuickLinks from './components/QuickLinks';
+import ClassroomPlacement from './components/ClassroomPlacement';
 
 const App: React.FC = () => {
   const queryParams = new URLSearchParams(window.location.search);
@@ -41,26 +42,26 @@ const App: React.FC = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(!isStudent && window.innerWidth > 1024);
   const [isBackgroundSettingsOpen, setIsBackgroundSettingsOpen] = useState(false);
   const [isSystemMenuOpen, setIsSystemMenuOpen] = useState(false);
-  const [students, setStudents] = useState<Student[]>(() => {
-    const saved = localStorage.getItem('kp_students');
+  
+  // Delad elevlista mellan alla verktyg
+  const [students, setStudents] = useState<PlacementStudent[]>(() => {
+    const saved = localStorage.getItem('kp_students_v3');
     return saved ? JSON.parse(saved) : [];
   });
+  
   const [maxZIndex, setMaxZIndex] = useState(200);
 
-  // Deriverad data
   const currentPage = pages[activePageIndex] || pages[0];
   const activeWidgets = currentPage.widgets.filter(w => w.isOpen);
   const openWidgetTypes = activeWidgets.map(w => w.type);
 
-  // Synka till LocalStorage
   useEffect(() => {
     if (!isStudent) {
       localStorage.setItem('kp_pages_v2', JSON.stringify(pages));
-      localStorage.setItem('kp_students', JSON.stringify(students));
+      localStorage.setItem('kp_students_v3', JSON.stringify(students));
     }
   }, [pages, students, isStudent]);
 
-  // --- HJÄLPFUNKTIONER ---
   const updateCurrentPage = useCallback((updates: Partial<PageData>) => {
     setPages(prev => prev.map((p, i) => i === activePageIndex ? { ...p, ...updates } : p));
   }, [activePageIndex]);
@@ -78,6 +79,7 @@ const App: React.FC = () => {
       case ToolType.GROUPING: return { width: 750, height: 750 };
       case ToolType.VIDEO_PLAYER: return { width: 800, height: 600 };
       case ToolType.QUICK_LINKS: return { width: 400, height: 500 };
+      case ToolType.PLACEMENT: return { width: 1100, height: 850 };
       default: return { width: 700, height: 750 };
     }
   };
@@ -181,6 +183,7 @@ const App: React.FC = () => {
       case ToolType.QR_CODE: return <QRCodeWidget />;
       case ToolType.VIDEO_PLAYER: return <VideoPlayer />;
       case ToolType.QUICK_LINKS: return <QuickLinks />;
+      case ToolType.PLACEMENT: return <ClassroomPlacement students={students} setStudents={setStudents} />;
       default: return null;
     }
   };
@@ -198,7 +201,8 @@ const App: React.FC = () => {
     [ToolType.IMAGE_ANNOTATOR]: { title: 'Bild-rita', icon: '📸' },
     [ToolType.QR_CODE]: { title: 'QR-Kod', icon: '📱' },
     [ToolType.VIDEO_PLAYER]: { title: 'Video', icon: '🎬' },
-    [ToolType.QUICK_LINKS]: { title: 'Genvägar', icon: '🔗' }
+    [ToolType.QUICK_LINKS]: { title: 'Genvägar', icon: '🔗' },
+    [ToolType.PLACEMENT]: { title: 'Klassplacering', icon: '🪑' }
   };
 
   if (isStudent && pollIdFromUrl) return <StudentPollView pollId={pollIdFromUrl} />;
@@ -270,7 +274,7 @@ const App: React.FC = () => {
           ))}
         </div>
 
-        {/* Bottom Page Navigation - Adjusted for iPad Safe Area */}
+        {/* Bottom Page Navigation */}
         {!isStudent && (
           <div className="absolute bottom-12 left-1/2 -translate-x-1/2 z-[99999] flex items-center gap-2 px-8 py-4 bg-white/90 backdrop-blur-2xl rounded-[3rem] shadow-2xl border border-white/50 animate-in slide-in-from-bottom-8 duration-500">
              <div className="flex gap-3">

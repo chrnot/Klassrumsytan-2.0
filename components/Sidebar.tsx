@@ -6,7 +6,7 @@ interface SidebarProps {
   activeTool: ToolType | null;
   onSelectTool: (tool: ToolType) => void;
   onClose?: () => void;
-  openWidgets?: ToolType[]; // Ny prop för att visa vilka som är öppna
+  openWidgets?: ToolType[];
 }
 
 interface ToolInfo {
@@ -22,6 +22,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTool, onSelectTool, onClose, op
 
   const tools: ToolInfo[] = [
     { type: ToolType.CHECKLIST, label: 'Arbetsgång', icon: '✅', desc: 'Skapa tydliga checklistor med timers och fokusläge.', color: 'bg-emerald-100 text-emerald-600' },
+    { type: ToolType.PLACEMENT, label: 'Klassplacering', icon: '🪑', desc: 'Optimera placeringar baserat på regler och behov.', color: 'bg-indigo-100 text-indigo-600' },
     { type: ToolType.TRAFFIC_LIGHT, label: 'Trafikljus', icon: '🚦', desc: 'Kommunicera tydligt med färg.', color: 'bg-red-100 text-red-600' },
     { type: ToolType.RANDOMIZER, label: 'Slumpa Elev', icon: '🎲', desc: 'Välj en elev på ett rättvist sätt.', color: 'bg-rose-100 text-rose-600' },
     { type: ToolType.GROUPING, label: 'Gruppering', icon: '👥', desc: 'Skapa slumpmässiga studiegrupper.', color: 'bg-orange-100 text-orange-600' },
@@ -34,15 +35,14 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTool, onSelectTool, onClose, op
     { type: ToolType.ASSISTANT, label: '5-min Aktivitet', icon: '✨', desc: 'Få förslag på snabba aktiviteter direkt från AI.', color: 'bg-indigo-100 text-indigo-600' },
   ];
 
-  const renderButton = (item: ToolInfo | { type: ToolType, label: string, icon: string, desc?: string, color?: string }) => {
-    const isMain = 'desc' in item;
+  const renderButton = (item: ToolInfo) => {
     const isOpen = openWidgets.includes(item.type);
 
     return (
       <button
         key={item.type}
         onClick={() => onSelectTool(item.type)}
-        onMouseEnter={() => isMain && setHoveredTool(item as ToolInfo)}
+        onMouseEnter={() => setHoveredTool(item)}
         onMouseLeave={() => setHoveredTool(null)}
         className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group w-full text-left relative ${
           activeTool === item.type
@@ -105,10 +105,6 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTool, onSelectTool, onClose, op
             <span className="hidden md:block text-[9px] font-black uppercase text-teal-600/60 tracking-tighter">VISUALISERA MATTE</span>
           </div>
         </button>
-        
-        <p className="text-[9px] font-black uppercase text-slate-400 tracking-widest text-center mt-1 opacity-50">
-          Välj verktyg för att börja
-        </p>
       </div>
     </aside>
   );

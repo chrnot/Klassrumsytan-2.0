@@ -4,6 +4,32 @@ export interface Student {
   name: string;
 }
 
+export interface PlacementStudent extends Student {
+  gender: 'kille' | 'tjej' | 'okant';
+  condition: 'ingen' | 'fram' | 'bak' | 'vid_vagg';
+  notWith: string[];
+  prefNotWith: string[];
+  prefWith: string[];
+  isPlaced?: boolean;
+}
+
+export interface Furniture {
+  id: string;
+  type: 'teacher' | 'door' | 'window' | 'carpet';
+  x: number;
+  y: number;
+  label: string;
+}
+
+export interface Desk {
+  id: number;
+  x: number;
+  y: number;
+  student1Id: string | null;
+  student2Id: string | null;
+  isPerimeter?: boolean;
+}
+
 export interface Group {
   id: number;
   members: Student[];
@@ -26,7 +52,8 @@ export enum ToolType {
   IMAGE_ANNOTATOR = 'IMAGE_ANNOTATOR',
   ARRANGE = 'ARRANGE',
   VIDEO_PLAYER = 'VIDEO_PLAYER',
-  QUICK_LINKS = 'QUICK_LINKS'
+  QUICK_LINKS = 'QUICK_LINKS',
+  PLACEMENT = 'PLACEMENT'
 }
 
 export interface WidgetInstance {
