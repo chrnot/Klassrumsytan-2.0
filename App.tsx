@@ -21,6 +21,7 @@ import VideoPlayer from './components/VideoPlayer';
 import QuickLinks from './components/QuickLinks';
 import LinkWidget from './components/LinkWidget';
 import ClassroomPlacement from './components/ClassroomPlacement';
+import LessonNavigator from './components/LessonNavigator';
 
 const App: React.FC = () => {
   const queryParams = new URLSearchParams(window.location.search);
@@ -82,6 +83,7 @@ const App: React.FC = () => {
       case ToolType.QUICK_LINKS: return { width: 400, height: 650 };
       case ToolType.PLACEMENT: return { width: 1100, height: 850 };
       case ToolType.LINK: return { width: 220, height: 220 };
+      case ToolType.LESSON_NAVIGATOR: return { width: 750, height: 750 };
       default: return { width: 700, height: 750 };
     }
   };
@@ -101,6 +103,7 @@ const App: React.FC = () => {
     [ToolType.VIDEO_PLAYER]: "Spela YouTube-videor utan distraktioner. Klistra in en länk så bäddas videon in snyggt på din arbetsyta.",
     [ToolType.QUICK_LINKS]: "Hanterare för genvägar. Skapa fristående små fönster för de webbplatser du vill att eleverna ska ha nära till hands.",
     [ToolType.PLACEMENT]: "Verktyg för att planera klassrummets möblering och placering. Algoritmen hjälper dig att placera eleverna utifrån dina pedagogiska regler.",
+    [ToolType.LESSON_NAVIGATOR]: "Lektions-Navigatören hjälper dig att strukturera lektionen visuellt. Sätt upp mål, lista centrala begrepp och följ lektionens olika moment på en tydlig tidslinje för att ge eleverna lugn och förutsägbarhet.",
     [ToolType.LINK]: "En snabbknapp som öppnar en specifik webbplats i en ny flik.",
     [ToolType.DASHBOARD]: "",
     [ToolType.BACKGROUND]: "",
@@ -239,6 +242,7 @@ const App: React.FC = () => {
         />;
       case ToolType.PLACEMENT: return <ClassroomPlacement students={students} setStudents={setStudents} />;
       case ToolType.LINK: return <LinkWidget url={widget.data?.url} title={widget.data?.title} />;
+      case ToolType.LESSON_NAVIGATOR: return <LessonNavigator />;
       default: return null;
     }
   };
@@ -258,6 +262,7 @@ const App: React.FC = () => {
     [ToolType.VIDEO_PLAYER]: { title: 'Video', icon: '🎬' },
     [ToolType.QUICK_LINKS]: { title: 'Genvägar', icon: '🔗' },
     [ToolType.PLACEMENT]: { title: 'Klassplacering', icon: '🪑' },
+    [ToolType.LESSON_NAVIGATOR]: { title: 'Lektions-Navigatör', icon: '🧭' },
     [ToolType.LINK]: { title: 'Länk', icon: '🔗' }
   };
 
