@@ -13,9 +13,9 @@ interface DashboardProps {
 const Dashboard: React.FC<DashboardProps> = ({ onSelectTool, studentsCount, currentBackground, onBackgroundSelect }) => {
   const cards = [
     { type: ToolType.CHECKLIST, title: 'Arbetsgång', desc: 'Planera lektionen.', icon: '✅', color: 'bg-emerald-100 text-emerald-600' },
+    { type: ToolType.CONVERSATION_BUBBLES, title: 'Snack-Bubblan', desc: 'Samtalsstöd.', icon: '💬', color: 'bg-indigo-100 text-indigo-600' },
     { type: ToolType.WHITEBOARD, title: 'Whiteboard', desc: 'Rita och förklara.', icon: '🎨', color: 'bg-blue-100 text-blue-600' },
     { type: ToolType.TIMER, title: 'Timer', desc: 'Sätt fokus.', icon: '⏱️', color: 'bg-indigo-100 text-indigo-600' },
-    { type: ToolType.RANDOMIZER, title: 'Slumpa', desc: 'Välj rättvist.', icon: '🎲', color: 'bg-rose-100 text-rose-600' },
   ];
 
   return (

@@ -1,13 +1,12 @@
 
 import { GoogleGenAI } from "@google/genai";
 
-const API_KEY = process.env.API_KEY || "";
-
 export const getGeminiSuggestion = async (prompt: string): Promise<string> => {
-  if (!API_KEY) return "API-nyckel saknas. Kontrollera miljövariabler.";
-  
   try {
-    const ai = new GoogleGenAI({ apiKey: API_KEY });
+    // Initializing the GenAI client with named parameter and direct environment variable access
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    
+    // Calling generateContent directly with the model and prompt
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
       contents: prompt,

@@ -22,9 +22,8 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTool, onSelectTool, onClose, op
 
   const tools: ToolInfo[] = [
     { type: ToolType.LESSON_NAVIGATOR, label: 'Lektions-Navigatör', icon: '🧭', desc: 'Strukturera lektionens mål, begrepp och tidslinje.', color: 'bg-indigo-100 text-indigo-600' },
-    { type: ToolType.MINDSET_CHECK, label: 'Känslo-Termometer', icon: '🌡️', desc: 'Mät självbild och mindset före/efter moment.', color: 'bg-indigo-100 text-indigo-600' },
-    { type: ToolType.TIERED_TASK, label: 'Nivå-Kortet', icon: '🎴', desc: 'Differentiera uppgifter med stöd och utmaning.', color: 'bg-indigo-100 text-indigo-600' },
     { type: ToolType.CHECKLIST, label: 'Arbetsgång', icon: '✅', desc: 'Skapa tydliga checklistor med timers och fokusläge.', color: 'bg-emerald-100 text-emerald-600' },
+    { type: ToolType.CONVERSATION_BUBBLES, label: 'Snack-Bubblan 2.0', icon: '💬', desc: 'Språkligt stöd och meningsbyggare för alla ämnen.', color: 'bg-indigo-100 text-indigo-600' },
     { type: ToolType.PLACEMENT, label: 'Klassplacering', icon: '🪑', desc: 'Optimera placeringar baserat på regler och behov.', color: 'bg-indigo-100 text-indigo-600' },
     { type: ToolType.TRAFFIC_LIGHT, label: 'Trafikljus', icon: '🚦', desc: 'Kommunicera tydligt med färg.', color: 'bg-red-100 text-red-600' },
     { type: ToolType.RANDOMIZER, label: 'Slumpa Elev', icon: '🎲', desc: 'Välj en elev på ett rättvist sätt.', color: 'bg-rose-100 text-rose-600' },

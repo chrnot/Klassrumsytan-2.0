@@ -23,7 +23,7 @@ import LinkWidget from './components/LinkWidget';
 import ClassroomPlacement from './components/ClassroomPlacement';
 import LessonNavigator from './components/LessonNavigator';
 import TieredTaskCard from './components/TieredTaskCard';
-import MindsetCheck from './components/MindsetCheck';
+import ConversationBubbles from './components/ConversationBubbles';
 
 const App: React.FC = () => {
   const queryParams = new URLSearchParams(window.location.search);
@@ -88,6 +88,7 @@ const App: React.FC = () => {
       case ToolType.LESSON_NAVIGATOR: return { width: 750, height: 750 };
       case ToolType.TIERED_TASK: return { width: 900, height: 800 };
       case ToolType.MINDSET_CHECK: return { width: 850, height: 850 };
+      case ToolType.CONVERSATION_BUBBLES: return { width: 850, height: 800 };
       default: return { width: 700, height: 750 };
     }
   };
@@ -109,7 +110,8 @@ const App: React.FC = () => {
     [ToolType.PLACEMENT]: "Verktyg för att planera klassrummets möblering och placering. Algoritmen hjälper dig att placera eleverna utifrån dina pedagogiska regler.",
     [ToolType.LESSON_NAVIGATOR]: "Lektions-Navigatören hjälper dig att strukturera lektionen visuellt. Sätt upp mål, lista centrala begrepp och följ lektionens olika moment på en tydlig tidslinje för att ge eleverna lugn och förutsägbarhet.",
     [ToolType.TIERED_TASK]: "Nivå-Kortet möjliggör enkel differentiering. Presentera en uppgift med dolda lager av progressivt stöd (ledtrådar) och utmanande följdfrågor för de som blir klara tidigt.",
-    [ToolType.MINDSET_CHECK]: "Känslo-Termometern mäter elevernas självbild inför och efter ett moment. Visualisera förflyttningen från Panik-zonen till Lär-zonen.",
+    [ToolType.MINDSET_CHECK]: "Känslo-Kollen mäter elevernas självbild inför och efter ett moment. Visualisera förflyttningen från Panik-zonen till Lär-zonen.",
+    [ToolType.CONVERSATION_BUBBLES]: "Erbjud språkliga stöttor (scaffolding) med meningsbyggare som tränar elevernas analys-, kommunikations- och metakognitiva förmågor.",
     [ToolType.LINK]: "En snabbknapp som öppnar en specifik webbplats i en ny flik.",
     [ToolType.DASHBOARD]: "",
     [ToolType.BACKGROUND]: "",
@@ -231,7 +233,7 @@ const App: React.FC = () => {
     switch (widget.type) {
       case ToolType.TIMER: return <Timer />;
       case ToolType.RANDOMIZER: return <Randomizer students={students} setStudents={setStudents} />;
-      case ToolType.POLLING: return <PollingTool />;
+      case ToolType.POLLING: return <PollingTool initialType="standard" />;
       case ToolType.ASSISTANT: return <GeminiAssistant />;
       case ToolType.NOISE_METER: return <NoiseMeter />;
       case ToolType.TRAFFIC_LIGHT: return <TrafficLight />;
@@ -250,7 +252,8 @@ const App: React.FC = () => {
       case ToolType.LINK: return <LinkWidget url={widget.data?.url} title={widget.data?.title} />;
       case ToolType.LESSON_NAVIGATOR: return <LessonNavigator />;
       case ToolType.TIERED_TASK: return <TieredTaskCard />;
-      case ToolType.MINDSET_CHECK: return <MindsetCheck />;
+      case ToolType.MINDSET_CHECK: return <PollingTool initialType="mindset" />;
+      case ToolType.CONVERSATION_BUBBLES: return <ConversationBubbles />;
       default: return null;
     }
   };
@@ -272,7 +275,8 @@ const App: React.FC = () => {
     [ToolType.PLACEMENT]: { title: 'Klassplacering', icon: '🪑' },
     [ToolType.LESSON_NAVIGATOR]: { title: 'Lektions-Navigatör', icon: '🧭' },
     [ToolType.TIERED_TASK]: { title: 'Nivå-Kortet', icon: '🎴' },
-    [ToolType.MINDSET_CHECK]: { title: 'Känslo-Termometern', icon: '🌡️' },
+    [ToolType.MINDSET_CHECK]: { title: 'Känslo-Kollen', icon: '📊' },
+    [ToolType.CONVERSATION_BUBBLES]: { title: 'Snack-Bubblan 2.0', icon: '💬' },
     [ToolType.LINK]: { title: 'Länk', icon: '🔗' }
   };
 
@@ -342,11 +346,11 @@ const App: React.FC = () => {
                     <span className="text-xl">🎴</span>
                     <span className="text-[7px] font-black uppercase text-slate-400 group-hover:text-indigo-500 mt-0.5">Nivå</span>
                   </button>
-                  <button onClick={() => { toggleWidget(ToolType.MINDSET_CHECK); setIsSystemMenuOpen(false); }} className={`w-14 h-14 bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl flex flex-col items-center justify-center hover:scale-110 active:scale-95 transition-all border border-white group ${openWidgetTypes.includes(ToolType.MINDSET_CHECK) ? 'ring-2 ring-indigo-500' : ''}`}>
-                    <span className="text-xl">🌡️</span>
-                    <span className="text-[7px] font-black uppercase text-slate-400 group-hover:text-indigo-500 mt-0.5">Mindset</span>
+                  <button onClick={() => { toggleWidget(ToolType.CONVERSATION_BUBBLES); setIsSystemMenuOpen(false); }} className={`w-14 h-14 bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl flex flex-col items-center justify-center hover:scale-110 active:scale-95 transition-all border border-white group ${openWidgetTypes.includes(ToolType.CONVERSATION_BUBBLES) ? 'ring-2 ring-indigo-500' : ''}`}>
+                    <span className="text-xl">💬</span>
+                    <span className="text-[7px] font-black uppercase text-slate-400 group-hover:text-indigo-500 mt-0.5">Bubblan</span>
                   </button>
-                  <button onClick={() => { toggleWidget(ToolType.NOISE_METER); setIsSystemMenuOpen(false); }} className={`w-14 h-14 bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl flex flex-col items-center justify-center hover:scale-110 active:scale-95 transition-all border border-white group ${openWidgetTypes.includes(ToolType.NOISE_METER) ? 'ring-2 ring-indigo-500' : ''}`}>
+                  <button onClick={() => { toggleWidget(ToolType.NOISE_METER); setIsSystemMenuOpen(false); }} className={`w-14 h-14 bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl flex flex-col items-center justify-center text-2xl hover:scale-110 active:scale-95 transition-all border border-white group ${openWidgetTypes.includes(ToolType.NOISE_METER) ? 'ring-2 ring-indigo-500' : ''}`}>
                     <span className="text-xl">🔊</span>
                     <span className="text-[7px] font-black uppercase text-slate-400 group-hover:text-indigo-500 mt-0.5">Ljud</span>
                   </button>

@@ -10,10 +10,12 @@ interface PollOption {
 }
 
 interface PollData {
-  type?: string;
-  question?: string;
+  type: 'standard' | 'mindset';
+  question: string;
   phase?: 'before' | 'after' | 'compare';
   options: PollOption[];
+  beforeVotes?: Record<string, number>;
+  afterVotes?: Record<string, number>;
   updatedAt: number;
 }
 
@@ -29,7 +31,7 @@ const StudentPollView: React.FC<StudentPollViewProps> = ({ pollId }) => {
 
   useEffect(() => {
     fetchPoll();
-    const interval = setInterval(fetchPoll, 5000); // Polla fas-ändringar
+    const interval = setInterval(fetchPoll, 4000);
     return () => clearInterval(interval);
   }, [pollId]);
 
@@ -40,8 +42,8 @@ const StudentPollView: React.FC<StudentPollViewProps> = ({ pollId }) => {
       if (!response.ok) throw new Error();
       const data = await response.json();
       if (data && data.data) {
-        // Nollställ röstningsstatus om fasen ändras
-        if (poll && poll.phase !== data.data.phase) {
+        // Om fasen ändras i mindset-läget, låt eleven rösta igen (för "Efter")
+        if (poll && data.data.type === 'mindset' && poll.phase !== data.data.phase) {
           setHasVoted(false);
         }
         setPoll(data.data);
@@ -62,31 +64,31 @@ const StudentPollView: React.FC<StudentPollViewProps> = ({ pollId }) => {
       if (!response.ok) throw new Error();
       const latest = await response.json();
       
-      const currentVotes = latest.data.votes || { panik: 0, lar: 0, komfort: 0 };
+      let updatedData = { ...latest.data };
       
-      // Hantera både vanlig poll och mindset check
-      let updatedData;
-      if (poll.type === 'MINDSET_CHECK') {
-        const nextVotes = { ...currentVotes, [optionId]: (currentVotes[optionId] || 0) + 1 };
-        updatedData = { ...latest.data, votes: nextVotes, updatedAt: Date.now() };
+      if (poll.type === 'mindset') {
+        const voteKey = poll.phase === 'after' ? 'afterVotes' : 'beforeVotes';
+        const currentVotes = latest.data[voteKey] || {};
+        updatedData[voteKey] = { ...currentVotes, [optionId]: (currentVotes[optionId] || 0) + 1 };
       } else {
-        const updatedOptions = latest.data.options.map((opt: PollOption) => 
+        updatedData.options = latest.data.options.map((opt: PollOption) => 
           opt.id === optionId ? { ...opt, votes: (opt.votes || 0) + 1 } : opt
         );
-        updatedData = { ...latest.data, options: updatedOptions, updatedAt: Date.now() };
       }
+      
+      updatedData.updatedAt = Date.now();
 
       await fetch(`https://api.restful-api.dev/objects/${pollId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name: poll.type === 'MINDSET_CHECK' ? "MINDSET_ACTIVE" : "KP_POLL_ACTIVE",
+          name: "KP_POLL_ACTIVE",
           data: updatedData
         })
       });
     } catch (err) {
       setHasVoted(false);
-      alert("Röstningen misslyckades. Försök igen.");
+      alert("Röstningen misslyckades.");
     }
   };
 
@@ -99,9 +101,8 @@ const StudentPollView: React.FC<StudentPollViewProps> = ({ pollId }) => {
   if (error || !poll) return (
     <div className="h-screen flex flex-col items-center justify-center bg-slate-50 p-10 text-center">
       <div className="text-6xl mb-6">⚠️</div>
-      <h2 className="text-2xl font-black text-slate-800 mb-2">Hittade inte omröstningen</h2>
-      <p className="text-slate-500 mb-4">Länken är ogiltig eller så har läraren stängt av.</p>
-      <button onClick={() => window.location.href = window.location.origin} className="mt-8 bg-indigo-600 text-white px-8 py-4 rounded-2xl font-bold shadow-lg">Startsida</button>
+      <h2 className="text-2xl font-black text-slate-800 mb-2">Omröstningen avslutad</h2>
+      <p className="text-slate-500 mb-4">Läraren har stängt sessionen eller så är länken ogiltig.</p>
     </div>
   );
 
@@ -109,8 +110,8 @@ const StudentPollView: React.FC<StudentPollViewProps> = ({ pollId }) => {
     return (
       <div className="h-screen flex flex-col items-center justify-center bg-indigo-600 text-white p-10 text-center animate-in zoom-in-95">
         <div className="text-8xl mb-8">📈</div>
-        <h2 className="text-4xl font-black mb-4">Analysera resultatet!</h2>
-        <p className="text-indigo-100 text-lg">Titta på tavlan för att se klassens feedback-loop.</p>
+        <h2 className="text-4xl font-black mb-4">Analysera!</h2>
+        <p className="text-indigo-100 text-lg">Titta på tavlan för att se klassens gemensamma resultat.</p>
       </div>
     );
   }
@@ -118,35 +119,30 @@ const StudentPollView: React.FC<StudentPollViewProps> = ({ pollId }) => {
   if (hasVoted) return (
     <div className="h-screen flex flex-col items-center justify-center bg-emerald-500 text-white p-10 text-center animate-in zoom-in-95">
       <div className="text-8xl mb-8">✅</div>
-      <h2 className="text-4xl font-black mb-4">Tack!</h2>
-      <p className="text-emerald-100 text-lg">Ditt svar är skickat. Titta på tavlan!</p>
-      <p className="mt-10 text-emerald-900/40 text-[10px] font-black uppercase tracking-widest">Vänta på nästa fas i lektionen</p>
+      <h2 className="text-4xl font-black mb-4">Tack för ditt svar!</h2>
+      <p className="text-emerald-100 text-lg">Håll koll på tavlan för resultaten.</p>
     </div>
   );
-
-  const isMindset = poll.type === 'MINDSET_CHECK';
 
   return (
     <div className="min-h-screen bg-slate-50 p-6 flex flex-col animate-in fade-in">
       <header className="mb-10 text-center shrink-0">
         <h1 className="text-3xl font-black text-slate-800 leading-tight mb-4">
-          {isMindset 
-            ? (poll.phase === 'before' ? 'Hur känns det inför uppgiften?' : 'Hur känns det nu efteråt?') 
-            : (poll.question || 'Välj ett alternativ')}
+          {poll.question}
         </h1>
         <div className="inline-block bg-white px-4 py-2 rounded-full shadow-sm text-[10px] font-black uppercase text-indigo-600 border border-slate-100 tracking-widest">
           Din röst är helt anonym
         </div>
       </header>
 
-      <div className="flex-1 flex flex-col gap-4 max-w-lg mx-auto w-full">
+      <div className={`flex-1 flex flex-col gap-4 max-w-lg mx-auto w-full ${poll.type === 'mindset' ? '' : 'justify-center'}`}>
         {poll.options.map((opt) => (
           <button
             key={opt.id}
             onClick={() => vote(opt.id)}
             className="flex-1 bg-white border-2 border-slate-100 rounded-[2.5rem] p-8 flex flex-col items-center justify-center shadow-sm active:scale-95 transition-all group"
           >
-            <span className="text-7xl mb-4 group-hover:scale-110 transition-transform">{opt.emoji || opt.icon}</span>
+            <span className="text-7xl mb-4 group-hover:scale-110 transition-transform">{opt.icon}</span>
             <span className="text-xl font-black text-slate-700">{opt.label}</span>
           </button>
         ))}
