@@ -46,30 +46,32 @@ const BackgroundSelector: React.FC<BackgroundSelectorProps> = ({ current, onSele
     <button
       key={bg.id}
       onClick={() => onSelect(bg.value)}
-      className={`w-full h-20 rounded-2xl border-2 transition-all overflow-hidden relative group flex flex-col items-center justify-center gap-1 ${
-        current === bg.value ? 'border-indigo-600 bg-indigo-50/50 scale-105 shadow-md z-10' : 'border-slate-100 bg-white hover:border-slate-300'
+      className={`w-full h-16 rounded-xl border-2 transition-all overflow-hidden relative group flex flex-col items-center justify-center gap-0.5 ${
+        current === bg.value 
+          ? 'border-indigo-600 bg-indigo-50/50 ring-2 ring-indigo-600/10 shadow-sm z-10' 
+          : 'border-slate-100 bg-white hover:border-slate-300'
       }`}
     >
       <div className={`absolute inset-0 opacity-20 pointer-events-none ${bg.value.includes('bg-') ? bg.value : ''}`} />
-      <span className="text-2xl relative z-10 group-hover:scale-110 transition-transform">{bg.icon}</span>
-      <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 relative z-10">{bg.label}</span>
+      <span className="text-xl relative z-10 group-hover:scale-110 transition-transform">{bg.icon}</span>
+      <span className="text-[8px] font-black uppercase tracking-tight text-slate-500 relative z-10 text-center px-1 whitespace-nowrap leading-none">{bg.label}</span>
     </button>
   );
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="space-y-4">
+      <div className="space-y-3">
         <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-1">Skolpapper & Miljöer</h4>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 p-1">
           {PRESETS.map(renderPreset)}
         </div>
       </div>
 
       <div className="space-y-4 pt-4 border-t border-slate-100">
         <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-1">Anpassat</h4>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-3 p-1">
           {/* Color Picker Button */}
-          <div className="w-full h-16 rounded-2xl border-2 border-slate-100 bg-white flex items-center justify-center relative group overflow-hidden transition-all hover:border-slate-300">
+          <div className="w-full h-14 rounded-2xl border-2 border-slate-100 bg-white flex items-center justify-center relative group overflow-hidden transition-all hover:border-slate-300 shadow-sm">
             <input 
               type="color" 
               value={current.startsWith('#') ? current : '#ffffff'}
@@ -85,7 +87,7 @@ const BackgroundSelector: React.FC<BackgroundSelectorProps> = ({ current, onSele
           {/* Custom Settings Button */}
           <button
             onClick={() => setShowCustom(!showCustom)}
-            className={`w-full h-16 rounded-2xl border-2 border-slate-100 bg-white flex items-center justify-center relative transition-all ${showCustom ? 'bg-indigo-50 border-indigo-200' : 'hover:border-slate-300'}`}
+            className={`w-full h-14 rounded-2xl border-2 border-slate-100 bg-white flex items-center justify-center relative transition-all shadow-sm ${showCustom ? 'bg-indigo-50 border-indigo-200' : 'hover:border-slate-300'}`}
           >
             <div className="flex items-center gap-2">
               <span className="text-xl">🖼️</span>
@@ -96,7 +98,7 @@ const BackgroundSelector: React.FC<BackgroundSelectorProps> = ({ current, onSele
       </div>
 
       {showCustom && (
-        <div className="flex flex-col gap-4 p-6 bg-slate-50 rounded-[2rem] animate-in slide-in-from-top-2 duration-200 border border-slate-100">
+        <div className="flex flex-col gap-4 p-6 bg-slate-50 rounded-[2.5rem] animate-in slide-in-from-top-2 duration-200 border border-slate-100">
           <div className="w-full">
             <label className="block text-[10px] font-bold text-slate-400 uppercase mb-2 ml-1">Klistra in Bild-URL</label>
             <form onSubmit={handleUrlSubmit} className="flex gap-2">
