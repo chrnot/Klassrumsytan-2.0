@@ -53,7 +53,8 @@ export enum ToolType {
   ARRANGE = 'ARRANGE',
   VIDEO_PLAYER = 'VIDEO_PLAYER',
   QUICK_LINKS = 'QUICK_LINKS',
-  PLACEMENT = 'PLACEMENT'
+  PLACEMENT = 'PLACEMENT',
+  LINK = 'LINK'
 }
 
 export interface WidgetInstance {
@@ -65,6 +66,7 @@ export interface WidgetInstance {
   height?: number;
   zIndex: number;
   isOpen: boolean;
+  data?: any; // För att lagra t.ex. { url: string, title: string }
 }
 
 export interface PageData {

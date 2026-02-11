@@ -4,6 +4,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 interface WidgetFrameProps {
   title: string;
   icon: string;
+  description?: string;
   children: React.ReactNode;
   onClose: () => void;
   x: number;
@@ -17,21 +18,20 @@ interface WidgetFrameProps {
 }
 
 const WidgetFrame: React.FC<WidgetFrameProps> = ({ 
-  title, icon, children, onClose, x, y, zIndex, onMove, onResize, onFocus, 
+  title, icon, description, children, onClose, x, y, zIndex, onMove, onResize, onFocus, 
   initialWidth = 450, initialHeight = 400
 }) => {
-  // Lokala koordinater för att undvika globalt lag vid drag
   const [localPos, setLocalPos] = useState({ x, y });
   const [localSize, setLocalSize] = useState({ width: initialWidth, height: initialHeight });
   const [isDragging, setIsDragging] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
+  const [showInfo, setShowInfo] = useState(false);
   
   const dragStartOffset = useRef({ x: 0, y: 0 });
   const resizeStartData = useRef({ width: 0, height: 0, mouseX: 0, mouseY: 0 });
   const frameRef = useRef<HTMLDivElement>(null);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
-  // Synka lokal position när props ändras utifrån (t.ex. vid "Ordna" eller "Centrera")
   useEffect(() => {
     if (!isDragging) setLocalPos({ x, y });
   }, [x, y, isDragging]);
@@ -62,13 +62,10 @@ const WidgetFrame: React.FC<WidgetFrameProps> = ({
 
     onFocus();
     setIsDragging(true);
-    
-    // Beräkna exakt var i fönstret vi klickade relativt fönstrets nuvarande x/y
     dragStartOffset.current = {
       x: e.clientX - localPos.x,
       y: e.clientY - localPos.y
     };
-    
     e.stopPropagation();
     e.preventDefault();
   };
@@ -77,14 +74,12 @@ const WidgetFrame: React.FC<WidgetFrameProps> = ({
     if (isMobile || e.button !== 0) return;
     onFocus();
     setIsResizing(true);
-    
     resizeStartData.current = {
       width: localSize.width,
       height: localSize.height,
       mouseX: e.clientX,
       mouseY: e.clientY
     };
-    
     e.stopPropagation();
     e.preventDefault();
   };
@@ -92,7 +87,6 @@ const WidgetFrame: React.FC<WidgetFrameProps> = ({
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       if (isDragging) {
-        // Vi använder inte state-callback här för att maximera prestandan
         const newX = e.clientX - dragStartOffset.current.x;
         const newY = e.clientY - dragStartOffset.current.y;
         setLocalPos({ x: newX, y: newY });
@@ -108,7 +102,7 @@ const WidgetFrame: React.FC<WidgetFrameProps> = ({
     const handleMouseUp = () => {
       if (isDragging) {
         setIsDragging(false);
-        onMove(localPos.x, localPos.y); // Synka tillbaka till App-state vid släpp
+        onMove(localPos.x, localPos.y);
       }
       if (isResizing) {
         setIsResizing(false);
@@ -128,22 +122,11 @@ const WidgetFrame: React.FC<WidgetFrameProps> = ({
   }, [isDragging, isResizing, localPos, localSize, onMove, onResize]);
 
   const frameStyle: React.CSSProperties = isMobile ? {
-    left: 0,
-    top: 0,
-    width: '100vw',
-    height: '100vh',
-    zIndex: 10000,
-    position: 'fixed'
+    left: 0, top: 0, width: '100vw', height: '100vh', zIndex: 10000, position: 'fixed'
   } : {
-    // Vi använder transform för rörelsen eftersom det är mycket mjukare än left/top
     transform: `translate3d(${localPos.x}px, ${localPos.y}px, 0)`,
-    width: localSize.width,
-    height: localSize.height,
-    zIndex,
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    willChange: 'transform, width, height',
+    width: localSize.width, height: localSize.height, zIndex,
+    position: 'absolute', top: 0, left: 0, willChange: 'transform, width, height',
     transition: isDragging || isResizing ? 'none' : 'transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), width 0.3s, height 0.3s'
   };
 
@@ -167,6 +150,15 @@ const WidgetFrame: React.FC<WidgetFrameProps> = ({
           <span className="font-bold text-slate-800 tracking-tight">{title}</span>
         </div>
         <div className="flex items-center gap-1 no-drag">
+          {description && (
+            <button 
+              onClick={(e) => { e.stopPropagation(); setShowInfo(!showInfo); }}
+              className={`w-10 h-10 flex items-center justify-center rounded-full transition-all active:scale-90 ${showInfo ? 'bg-indigo-100 text-indigo-600' : 'hover:bg-slate-200/50 text-slate-400'}`}
+              title="Information"
+            >
+              <span className="text-lg">ℹ️</span>
+            </button>
+          )}
           {!isMobile && (
             <button 
               onClick={handleCenter}
@@ -185,8 +177,25 @@ const WidgetFrame: React.FC<WidgetFrameProps> = ({
         </div>
       </div>
 
-      <div className="flex-1 p-4 md:p-6 overflow-y-auto overflow-x-hidden custom-scrollbar bg-white">
+      <div className="flex-1 p-4 md:p-6 overflow-y-auto overflow-x-hidden custom-scrollbar bg-white relative">
         {children}
+        
+        {/* Info Overlay */}
+        {showInfo && (
+          <div className="absolute inset-0 bg-white/95 backdrop-blur-sm z-[60] p-8 animate-in fade-in slide-in-from-top-4 duration-300 flex flex-col items-center justify-center text-center">
+            <div className="w-16 h-16 bg-indigo-50 text-indigo-600 rounded-3xl flex items-center justify-center text-3xl mb-6">ℹ️</div>
+            <h3 className="text-xl font-black text-slate-800 mb-4">{title}</h3>
+            <p className="text-slate-500 font-medium leading-relaxed max-w-sm mb-8 text-sm md:text-base">
+              {description}
+            </p>
+            <button 
+              onClick={() => setShowInfo(false)}
+              className="bg-indigo-600 text-white px-8 py-3 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-indigo-700 shadow-xl shadow-indigo-100 transition-all"
+            >
+              Jag förstår
+            </button>
+          </div>
+        )}
       </div>
 
       {!isMobile && (

@@ -19,6 +19,7 @@ import StudentPollView from './components/StudentPollView';
 import GeminiAssistant from './components/GeminiAssistant';
 import VideoPlayer from './components/VideoPlayer';
 import QuickLinks from './components/QuickLinks';
+import LinkWidget from './components/LinkWidget';
 import ClassroomPlacement from './components/ClassroomPlacement';
 
 const App: React.FC = () => {
@@ -43,7 +44,6 @@ const App: React.FC = () => {
   const [isBackgroundSettingsOpen, setIsBackgroundSettingsOpen] = useState(false);
   const [isSystemMenuOpen, setIsSystemMenuOpen] = useState(false);
   
-  // Delad elevlista mellan alla verktyg
   const [students, setStudents] = useState<PlacementStudent[]>(() => {
     const saved = localStorage.getItem('kp_students_v3');
     return saved ? JSON.parse(saved) : [];
@@ -53,7 +53,7 @@ const App: React.FC = () => {
 
   const currentPage = pages[activePageIndex] || pages[0];
   const activeWidgets = currentPage.widgets.filter(w => w.isOpen);
-  const openWidgetTypes = activeWidgets.map(w => w.type);
+  const openWidgetTypes = [...new Set(activeWidgets.map(w => w.type))];
 
   useEffect(() => {
     if (!isStudent) {
@@ -74,17 +74,43 @@ const App: React.FC = () => {
       case ToolType.RANDOMIZER: return { width: 600, height: 600 };
       case ToolType.POLLING: return { width: 850, height: 750 };
       case ToolType.ASSISTANT: return { width: 500, height: 750 };
+      case ToolType.NOISE_METER: return { width: 500, height: 700 };
       case ToolType.TRAFFIC_LIGHT: return { width: 500, height: 700 };
       case ToolType.CHECKLIST: return { width: 550, height: 750 };
       case ToolType.GROUPING: return { width: 750, height: 750 };
       case ToolType.VIDEO_PLAYER: return { width: 800, height: 600 };
-      case ToolType.QUICK_LINKS: return { width: 400, height: 500 };
+      case ToolType.QUICK_LINKS: return { width: 400, height: 650 };
       case ToolType.PLACEMENT: return { width: 1100, height: 850 };
+      case ToolType.LINK: return { width: 220, height: 220 };
       default: return { width: 700, height: 750 };
     }
   };
 
+  const toolDescriptions: Record<ToolType, string> = {
+    [ToolType.TIMER]: "Sätt en tidsgräns för lektionsmoment. Välj mellan klassisk nedräkning, TimeTimer för visuell tid, eller ett vanligt stoppur.",
+    [ToolType.RANDOMIZER]: "Välj en slumpmässig elev på ett rättvist sätt. Du kan hantera klasslistan direkt i verktyget eller massimportera namn.",
+    [ToolType.POLLING]: "Låt eleverna rösta live via sina egna enheter. Perfekt för att stämma av förståelse eller göra snabba omröstningar.",
+    [ToolType.ASSISTANT]: "Din pedagogiska AI-assistent. Få förslag på 5-minutersaktiviteter, mattegåtor eller diskussionsfrågor via text eller röst.",
+    [ToolType.NOISE_METER]: "Visar ljudnivån i klassrummet i realtid. Om det blir för högt hörs en varningssignal för att hjälpa eleverna reglera volymen.",
+    [ToolType.TRAFFIC_LIGHT]: "Kommunicera visuellt vad som förväntas. Redigera texterna för att passa din lektion och använd 'Fokusläge' för att visa stort på tavlan.",
+    [ToolType.GROUPING]: "Dela in klassen i slumpmässiga grupper. Du kan redigera grupperna i efterhand och visa resultatet stort på tavlan.",
+    [ToolType.CHECKLIST]: "Gör lektionsplaneringen tydlig. Lägg till moment, sätt timers och använd 'Fokusläge' för att markera vad klassen jobbar med just nu.",
+    [ToolType.WHITEBOARD]: "En rityta med stöd för olika pappersmönster som matterutor och linjer. Perfekt för snabba förklaringar eller genomgångar.",
+    [ToolType.IMAGE_ANNOTATOR]: "Ladda upp en bild och rita direkt ovanpå den. Användbart för att gå igenom texter, kartor eller diagram tillsammans.",
+    [ToolType.QR_CODE]: "Skapa en QR-kod från vilken länk som helst. Eleverna kan sedan enkelt skanna koden med sina enheter för att besöka webbplatsen.",
+    [ToolType.VIDEO_PLAYER]: "Spela YouTube-videor utan distraktioner. Klistra in en länk så bäddas videon in snyggt på din arbetsyta.",
+    [ToolType.QUICK_LINKS]: "Hanterare för genvägar. Skapa fristående små fönster för de webbplatser du vill att eleverna ska ha nära till hands.",
+    [ToolType.PLACEMENT]: "Verktyg för att planera klassrummets möblering och placering. Algoritmen hjälper dig att placera eleverna utifrån dina pedagogiska regler.",
+    [ToolType.LINK]: "En snabbknapp som öppnar en specifik webbplats i en ny flik.",
+    [ToolType.DASHBOARD]: "",
+    [ToolType.BACKGROUND]: "",
+    [ToolType.MATTEYTAN]: "",
+    [ToolType.ARRANGE]: ""
+  };
+
   const toggleWidget = useCallback((type: ToolType) => {
+    if (type === ToolType.LINK) return;
+
     const existing = currentPage.widgets.find(w => w.type === type);
     const newZ = maxZIndex + 1;
     setMaxZIndex(newZ);
@@ -107,6 +133,30 @@ const App: React.FC = () => {
     }
   }, [currentPage, maxZIndex, updateCurrentPage]);
 
+  const addLinkWidget = useCallback((url: string, title: string) => {
+    const currentLinks = currentPage.widgets.filter(w => w.type === ToolType.LINK && w.isOpen);
+    if (currentLinks.length >= 5) {
+      alert("Max 5 fristående länkar per sida tillåtna.");
+      return;
+    }
+
+    const newZ = maxZIndex + 1;
+    setMaxZIndex(newZ);
+    const { width, height } = getInitialDimensions(ToolType.LINK);
+    const offset = currentLinks.length * 30;
+    const pos = { x: 100 + offset, y: 100 + offset };
+
+    updateCurrentPage({ 
+      widgets: [...currentPage.widgets, { 
+        id: Math.random().toString(36).substr(2, 9), 
+        type: ToolType.LINK, 
+        x: pos.x, y: pos.y, zIndex: newZ, 
+        isOpen: true, width, height,
+        data: { url, title }
+      }] 
+    });
+  }, [currentPage, maxZIndex, updateCurrentPage]);
+
   const arrangeWidgets = useCallback(() => {
     const active = currentPage.widgets.filter(w => w.isOpen);
     if (active.length === 0) return;
@@ -126,8 +176,8 @@ const App: React.FC = () => {
         const row = Math.floor(idx / cols);
         const col = idx % cols;
         const dims = getInitialDimensions(w.type);
-        const targetW = Math.min(dims.width, cellW - 30);
-        const targetH = Math.min(dims.height, cellH - 30);
+        const targetW = Math.min(w.width || dims.width, cellW - 30);
+        const targetH = Math.min(w.height || dims.height, cellH - 30);
         return { 
           ...w, 
           x: sidebarWidth + padding + (col * cellW) + (cellW - targetW) / 2, 
@@ -148,42 +198,47 @@ const App: React.FC = () => {
     }
   };
 
-  const updateWidgetPosition = (type: ToolType, x: number, y: number) => {
-    updateCurrentPage({ widgets: currentPage.widgets.map(w => w.type === type ? { ...w, x, y } : w) });
+  const updateWidgetPosition = (id: string, x: number, y: number) => {
+    updateCurrentPage({ widgets: currentPage.widgets.map(w => w.id === id ? { ...w, x, y } : w) });
   };
 
-  const updateWidgetSize = (type: ToolType, width: number, height: number) => {
-    updateCurrentPage({ widgets: currentPage.widgets.map(w => w.type === type ? { ...w, width, height } : w) });
+  const updateWidgetSize = (id: string, width: number, height: number) => {
+    updateCurrentPage({ widgets: currentPage.widgets.map(w => w.id === id ? { ...w, width, height } : w) });
   };
 
-  const focusWidget = (type: ToolType) => {
-    const target = currentPage.widgets.find(w => w.type === type);
+  const focusWidget = (id: string) => {
+    const target = currentPage.widgets.find(w => w.id === id);
     if (!target || target.zIndex === maxZIndex) return;
     const newZ = maxZIndex + 1;
     setMaxZIndex(newZ);
-    updateCurrentPage({ widgets: currentPage.widgets.map(w => w.type === type ? { ...w, zIndex: newZ } : w) });
+    updateCurrentPage({ widgets: currentPage.widgets.map(w => w.id === id ? { ...w, zIndex: newZ } : w) });
   };
 
-  const closeWidget = (type: ToolType) => {
-    updateCurrentPage({ widgets: currentPage.widgets.map(z => z.type === type ? { ...z, isOpen: false } : z) });
+  const closeWidget = (id: string) => {
+    updateCurrentPage({ widgets: currentPage.widgets.map(z => z.id === id ? { ...z, isOpen: false } : z) });
   };
 
-  const getWidgetComponent = (type: ToolType) => {
-    switch (type) {
+  const getWidgetComponent = (widget: WidgetInstance) => {
+    switch (widget.type) {
       case ToolType.TIMER: return <Timer />;
       case ToolType.RANDOMIZER: return <Randomizer students={students} setStudents={setStudents} />;
       case ToolType.POLLING: return <PollingTool />;
       case ToolType.ASSISTANT: return <GeminiAssistant />;
       case ToolType.NOISE_METER: return <NoiseMeter />;
       case ToolType.TRAFFIC_LIGHT: return <TrafficLight />;
-      case ToolType.GROUPING: return <GroupingTool students={students} onResize={(w, h) => updateWidgetSize(ToolType.GROUPING, w, h)} />;
+      case ToolType.GROUPING: return <GroupingTool students={students} onResize={(w, h) => updateWidgetSize(widget.id, w, h)} />;
       case ToolType.CHECKLIST: return <SmartChecklist />;
       case ToolType.WHITEBOARD: return <Whiteboard />;
       case ToolType.IMAGE_ANNOTATOR: return <ImageAnnotator />;
       case ToolType.QR_CODE: return <QRCodeWidget />;
       case ToolType.VIDEO_PLAYER: return <VideoPlayer />;
-      case ToolType.QUICK_LINKS: return <QuickLinks />;
+      case ToolType.QUICK_LINKS: 
+        return <QuickLinks 
+          onAddLink={addLinkWidget} 
+          existingLinksCount={currentPage.widgets.filter(w => w.type === ToolType.LINK && w.isOpen).length} 
+        />;
       case ToolType.PLACEMENT: return <ClassroomPlacement students={students} setStudents={setStudents} />;
+      case ToolType.LINK: return <LinkWidget url={widget.data?.url} title={widget.data?.title} />;
       default: return null;
     }
   };
@@ -202,7 +257,8 @@ const App: React.FC = () => {
     [ToolType.QR_CODE]: { title: 'QR-Kod', icon: '📱' },
     [ToolType.VIDEO_PLAYER]: { title: 'Video', icon: '🎬' },
     [ToolType.QUICK_LINKS]: { title: 'Genvägar', icon: '🔗' },
-    [ToolType.PLACEMENT]: { title: 'Klassplacering', icon: '🪑' }
+    [ToolType.PLACEMENT]: { title: 'Klassplacering', icon: '🪑' },
+    [ToolType.LINK]: { title: 'Länk', icon: '🔗' }
   };
 
   if (isStudent && pollIdFromUrl) return <StudentPollView pollId={pollIdFromUrl} />;
@@ -227,6 +283,31 @@ const App: React.FC = () => {
       )}
 
       <main className="flex-1 relative overflow-hidden flex flex-col">
+        {!isStudent && (
+          <div className="absolute top-6 left-6 w-14 h-14 bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl flex items-center justify-center text-2xl z-[99999] hover:scale-110 transition-transform cursor-pointer" onClick={() => setIsSidebarOpen(true)}>🏫</div>
+        )}
+
+        {/* Widget layer */}
+        <div key={currentPage.id} className="absolute inset-0 z-10 pointer-events-none">
+          {activeWidgets.map((w) => (
+            <div key={w.id} className="pointer-events-auto">
+              <WidgetFrame
+                title={w.type === ToolType.LINK ? (w.data?.title || 'Länk') : (metaData[w.type]?.title || 'Verktyg')} 
+                icon={w.type === ToolType.LINK ? '🔗' : (metaData[w.type]?.icon || '⚙️')} 
+                description={toolDescriptions[w.type]}
+                x={w.x} y={w.y} zIndex={w.zIndex} initialWidth={w.width} initialHeight={w.height}
+                onMove={(nx, ny) => updateWidgetPosition(w.id, nx, ny)}
+                onResize={(nw, nh) => updateWidgetSize(w.id, nw, nh)}
+                onFocus={() => focusWidget(w.id)}
+                onClose={() => closeWidget(w.id)}
+              >
+                {getWidgetComponent(w)}
+              </WidgetFrame>
+            </div>
+          ))}
+        </div>
+
+        {/* System & Options Controls */}
         {!isStudent && (
           <div className="absolute top-6 right-6 z-[99999] flex items-start gap-3">
             <button onClick={arrangeWidgets} title="Ordna fönster" className="w-14 h-14 bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl flex items-center justify-center text-2xl hover:scale-110 active:scale-95 transition-all border border-white">🧩</button>
@@ -255,24 +336,6 @@ const App: React.FC = () => {
             </div>
           </div>
         )}
-
-        {/* Widget layer */}
-        <div key={currentPage.id} className="absolute inset-0 z-10 pointer-events-none">
-          {activeWidgets.map((w) => (
-            <div key={w.id} className="pointer-events-auto">
-              <WidgetFrame
-                title={metaData[w.type]?.title || 'Verktyg'} icon={metaData[w.type]?.icon || '⚙️'} 
-                x={w.x} y={w.y} zIndex={w.zIndex} initialWidth={w.width} initialHeight={w.height}
-                onMove={(nx, ny) => updateWidgetPosition(w.type, nx, ny)}
-                onResize={(nw, nh) => updateWidgetSize(w.type, nw, nh)}
-                onFocus={() => focusWidget(w.type)}
-                onClose={() => closeWidget(w.type)}
-              >
-                {getWidgetComponent(w.type)}
-              </WidgetFrame>
-            </div>
-          ))}
-        </div>
 
         {/* Bottom Page Navigation */}
         {!isStudent && (
@@ -304,10 +367,6 @@ const App: React.FC = () => {
               <BackgroundSelector current={currentPage.background} onSelect={(bg) => updateCurrentPage({ background: bg })} />
             </div>
           </div>
-        )}
-
-        {!isSidebarOpen && (
-          <button onClick={() => setIsSidebarOpen(true)} className="absolute top-6 left-6 w-14 h-14 bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl flex items-center justify-center text-2xl z-[99999] hover:scale-110 transition-transform">🏫</button>
         )}
         
         {activeWidgets.length === 0 && (
